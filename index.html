@@ -314,24 +314,45 @@
             alert("追加しました！");
         }
 
-        // CSVインポート機能
+        // CSVインポート機能（重複チェック付き）
         function importCSV() {
             const csvText = document.getElementById('csv-input').value.trim();
             if(!csvText) return;
             const lines = csvText.split('\n');
-            let count = 0;
+            let addCount = 0;
+            let skipCount = 0;
+
             lines.forEach(line => {
                 const cols = line.split(',');
                 if(cols.length >= 4) {
-                    const eng = cols[0].trim(), jpn = cols[1].trim(), pos = cols[2].trim(), cat = cols[3].trim(), ex = cols[4] ? cols[4].trim() : "";
-                    if(eng && jpn) {
+                    const eng = cols[0].trim();
+                    const jpn = cols[1].trim();
+                    const pos = cols[2].trim();
+                    const cat = cols[3].trim();
+                    const ex = cols[4] ? cols[4].trim() : "";
+
+                    // 【重複チェック】すでに同じ英単語(w)が存在するか確認
+                    const isDuplicate = userDb.some(item => item.w.toLowerCase() === eng.toLowerCase());
+
+                    if(eng && jpn && !isDuplicate) {
                         userDb.push({ id: "u_" + Date.now() + Math.random(), category: cat, w: eng, m: jpn, p: pos, c: ex, level: 0, interval: 1, nextDate: 0, missCount: 0 });
-                        count++;
+                        addCount++;
+                    } else if (isDuplicate) {
+                        skipCount++;
                     }
                 }
             });
-            if(count > 0) { saveProgress(); refreshHomeUI(); document.getElementById('csv-input').value = ""; document.getElementById('import-log').innerText = `${count}単語を追加しました！`; }
-            else { document.getElementById('import-log').innerText = "フォーマットが間違っています"; document.getElementById('import-log').className = "text-[10px] text-red-400 mt-2 text-center font-bold"; }
+
+            if(addCount > 0 || skipCount > 0) {
+                saveProgress();
+                refreshHomeUI();
+                document.getElementById('csv-input').value = "";
+                document.getElementById('import-log').innerText = `${addCount}件追加、${skipCount}件スキップしました`;
+                document.getElementById('import-log').className = "text-[10px] text-green-400 mt-2 text-center font-bold";
+            } else {
+                document.getElementById('import-log').innerText = "有効なデータが見つかりませんでした";
+                document.getElementById('import-log').className = "text-[10px] text-red-400 mt-2 text-center font-bold";
+            }
         }
 
         function setMode(mode) {
