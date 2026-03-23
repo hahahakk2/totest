@@ -11,309 +11,338 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { touch-action: none; overflow: hidden; background-color: #121212; font-family: -apple-system, sans-serif; color: #ffffff; }
-        .swipe-card { transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s; user-select: none; }
-        .timer-bar { transition: width 0.05s linear; }
-        .bg-noun { background-color: #3b82f6; } /* Blue */
-        .bg-verb { background-color: #ef4444; } /* Red */
-        .bg-adj { background-color: #22c55e; }  /* Green */
-        .bg-adv { background-color: #eab308; }  /* Yellow */
-        .bg-conj { background-color: #6366f1; } /* Indigo */
-        .bg-idiom { background-color: #a855f7; } /* Purple */
+        :root { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); }
+        body { 
+            background-color: #121212; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            color: #ffffff; 
+            margin: 0; 
+            padding: 0;
+            min-height: 100vh;
+        }
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .swipe-card { 
+            user-select: none; 
+            touch-action: none;
+            will-change: transform;
+        }
+        .card-animate {
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s; 
+        }
+        .timer-bar { transition: width 0.1s linear; }
+        .bg-noun { background-color: #3b82f6; }
+        .bg-verb { background-color: #ef4444; }
+        .bg-adj { background-color: #22c55e; }
+        .bg-adv { background-color: #eab308; }
+        .bg-conj { background-color: #6366f1; }
+        .bg-idiom { background-color: #a855f7; }
+        
         .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        
         @keyframes pulse-red { 0%, 100% { background-color: #ef4444; } 50% { background-color: #7f1d1d; } }
         .timer-danger { animation: pulse-red 1s infinite; }
+        
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen">
+<body class="flex flex-col items-center">
 
-    <!-- Home Screen -->
-    <div id="home-screen" class="w-full max-w-md p-6 flex flex-col h-screen overflow-y-auto custom-scroll relative">
-        <button onclick="openAddWordModal()" class="absolute top-6 right-6 p-3 bg-zinc-800 rounded-full text-white active:scale-95 shadow-lg z-10 flex items-center justify-center">
-            <i data-lucide="database" class="w-5 h-5"></i>
-        </button>
-
-        <div class="text-center mt-12 mb-8">
-            <h1 class="text-6xl font-black mb-2 tracking-tighter italic">T-750</h1>
-            <p class="text-gray-500 font-mono text-xs tracking-[0.4em] uppercase">Speed Flash System</p>
-        </div>
-
-        <div class="flex flex-wrap gap-2 mb-4 pb-2 w-full">
-            <button onclick="setCategory('general')" id="cat-general" class="px-5 py-2.5 rounded-full font-black text-[11px] bg-white text-black shrink-0 transition-all uppercase tracking-widest shadow-lg">一般単語</button>
-            <button onclick="setCategory('adv_conj')" id="cat-adv_conj" class="px-5 py-2.5 rounded-full font-black text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0 transition-all uppercase tracking-widest">副詞・接続詞</button>
-            <button onclick="setCategory('idiom')" id="cat-idiom" class="px-5 py-2.5 rounded-full font-black text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0 transition-all uppercase tracking-widest">イディオム</button>
-        </div>
-
-        <div class="bg-zinc-900 rounded-3xl p-6 mb-8 border border-zinc-800 shadow-2xl">
-            <div class="flex justify-between items-end mb-4">
-                <span class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Mastery Status</span>
-                <span id="mastery-percent" class="text-3xl font-black text-blue-500 transition-all">0%</span>
-            </div>
-            <div class="w-full bg-zinc-800 h-2 rounded-full overflow-hidden mb-3">
-                <div id="mastery-bar" class="bg-blue-500 h-full w-0 transition-all duration-1000"></div>
-            </div>
-            <div class="flex justify-between text-[10px] font-mono text-zinc-500 uppercase">
-                <span id="stats-mastered">Mastered: 0</span>
-                <span id="stats-total">Total: 0</span>
-            </div>
-        </div>
-
-        <div class="space-y-6 mb-12">
-            <div>
-                <label class="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-3 ml-1">Daily Session Settings</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
-                        <span class="text-[9px] text-zinc-500 block mb-1 font-bold uppercase">Word Count</span>
-                        <select id="count-setting" class="bg-transparent font-black w-full focus:outline-none text-white appearance-none cursor-pointer">
-                            <option value="10" class="bg-zinc-900">10 Words</option>
-                            <option value="30" class="bg-zinc-900" selected>30 Words</option>
-                            <option value="50" class="bg-zinc-900">50 Words</option>
-                        </select>
-                    </div>
-                    <div class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
-                        <span class="text-[9px] text-zinc-500 block mb-1 font-bold uppercase">Perfect Limit</span>
-                        <select id="timer-setting" class="bg-transparent font-black w-full focus:outline-none text-white appearance-none cursor-pointer">
-                            <option value="1000" class="bg-zinc-900" selected>1.0s (Fast)</option>
-                            <option value="1500" class="bg-zinc-900">1.5s (Mid)</option>
-                            <option value="2000" class="bg-zinc-900">2.0s (Relax)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <label class="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-3 ml-1">Learning Priority</label>
-                <div class="flex p-1 bg-zinc-900 rounded-2xl border border-zinc-800">
-                    <button onclick="setMode('attack')" id="mode-attack" class="flex-1 py-3 rounded-xl font-black text-xs transition-all bg-white text-black">ATTACK</button>
-                    <button onclick="setMode('balance')" id="mode-balance" class="flex-1 py-3 rounded-xl font-black text-xs transition-all text-zinc-500">BALANCE</button>
-                    <button onclick="setMode('review')" id="mode-review" class="flex-1 py-3 rounded-xl font-black text-xs transition-all text-zinc-500">REVIEW</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-auto space-y-3 pb-8">
-            <button onclick="startSession()" class="w-full bg-white text-black font-black py-6 rounded-3xl text-xl shadow-2xl active:scale-95 transition-transform flex items-center justify-center gap-3">
-                <i data-lucide="zap" class="fill-current w-6 h-6"></i>
-                <span id="start-btn-text">START SESSION</span>
+    <div id="app" class="app-container w-full max-w-md relative">
+        
+        <div id="home-screen" class="flex-1 flex flex-col p-6 overflow-y-auto custom-scroll pb-20">
+            <button onclick="openAddWordModal()" class="absolute top-6 right-6 p-3 bg-zinc-800 rounded-full text-white active:scale-95 shadow-lg z-10">
+                <i data-lucide="database" class="w-5 h-5"></i>
             </button>
-            <button id="flame-btn" onclick="startSession(true)" class="w-full bg-orange-600/10 text-orange-500 font-black py-4 rounded-3xl text-sm flex items-center justify-center gap-2 opacity-50 cursor-not-allowed border border-orange-500/20" disabled>
-                <i data-lucide="flame" class="w-5 h-5"></i>
-                <span>WEAK FOCUS</span>
-            </button>
-        </div>
-    </div>
 
-    <!-- 単語管理モーダル (CSV一括追加対応) -->
-    <div id="add-word-modal" class="hidden absolute inset-0 bg-black/95 z-50 flex flex-col p-6 items-center justify-start overflow-y-auto custom-scroll backdrop-blur-md">
-        <div class="w-full max-w-md mt-10">
-            <div class="flex justify-between items-center mb-8">
-                <h3 class="text-2xl font-black tracking-tighter italic">DATABASE</h3>
-                <button onclick="closeAddWordModal()" class="p-2 text-zinc-500 active:text-white bg-zinc-900 rounded-full border border-zinc-800"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="text-center mt-12 mb-8">
+                <h1 class="text-6xl font-bold mb-2 tracking-tighter italic">T-750</h1>
+                <p class="text-gray-500 font-mono text-xs tracking-[0.4em] uppercase">Speed Flash System</p>
             </div>
 
-            <!-- 単発追加 -->
-            <div class="bg-zinc-900 rounded-[32px] p-6 border border-zinc-800 shadow-xl mb-6">
-                <h4 class="text-[10px] font-black text-blue-500 mb-4 uppercase tracking-[0.3em] border-b border-zinc-800 pb-2">Single Add</h4>
-                <div class="space-y-3">
-                    <select id="new-word-category" class="w-full bg-black rounded-xl p-3 text-sm font-bold text-white focus:outline-none border border-zinc-800">
-                        <option value="general">一般単語</option><option value="adv_conj">副詞・接続詞混合</option><option value="idiom">イディオム</option>
-                    </select>
-                    <input type="text" id="new-word-eng" class="w-full bg-black rounded-xl p-3 text-lg font-black text-white focus:outline-none border border-zinc-800" placeholder="English Word">
-                    <input type="text" id="new-word-jpn" class="w-full bg-black rounded-xl p-3 text-sm font-bold text-white focus:outline-none border border-zinc-800" placeholder="日本語の意味">
-                    <select id="new-word-pos" class="w-full bg-black rounded-xl p-3 text-sm font-bold text-white focus:outline-none border border-zinc-800">
-                        <option value="noun">名詞</option><option value="verb">動詞</option><option value="adj">形容詞</option>
-                        <option value="adv">副詞</option><option value="conj">接続詞</option><option value="idiom">熟語</option>
-                    </select>
-                    <button onclick="saveNewWord()" class="w-full bg-white text-black font-black py-3 rounded-xl mt-2 active:scale-95 transition-transform">追加する</button>
+            <div class="flex gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2 w-full">
+                <button onclick="setCategory('general')" id="cat-general" class="category-btn px-5 py-2.5 rounded-full font-bold text-[11px] bg-white text-black shrink-0 transition-all uppercase tracking-widest shadow-lg">一般単語</button>
+                <button onclick="setCategory('adv_conj')" id="cat-adv_conj" class="category-btn px-5 py-2.5 rounded-full font-bold text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0 transition-all uppercase tracking-widest">副詞・接続詞</button>
+                <button onclick="setCategory('idiom')" id="cat-idiom" class="category-btn px-5 py-2.5 rounded-full font-bold text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0 transition-all uppercase tracking-widest">イディオム</button>
+            </div>
+
+            <div class="bg-zinc-900 rounded-3xl p-6 mb-8 border border-zinc-800 shadow-2xl">
+                <div class="flex justify-between items-end mb-4">
+                    <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Mastery Status</span>
+                    <span id="mastery-percent" class="text-3xl font-bold text-blue-500">0%</span>
+                </div>
+                <div class="w-full bg-zinc-800 h-2 rounded-full overflow-hidden mb-3">
+                    <div id="mastery-bar" class="bg-blue-500 h-full w-0 transition-all duration-1000"></div>
+                </div>
+                <div class="flex justify-between text-[10px] font-mono text-zinc-500 uppercase">
+                    <span id="stats-mastered">Mastered: 0</span>
+                    <span id="stats-total">Total: 0</span>
                 </div>
             </div>
 
-            <!-- CSV一括追加 -->
-            <div class="bg-zinc-900 rounded-[32px] p-6 border border-zinc-800 shadow-xl mb-10">
-                <h4 class="text-[10px] font-black text-purple-500 mb-4 uppercase tracking-[0.3em] border-b border-zinc-800 pb-2">Bulk Import (CSV)</h4>
-                <p class="text-[9px] text-zinc-400 mb-2 leading-relaxed">
-                    エクセル等からコピーして貼り付け。<br>
-                    書式：<span class="text-white font-mono bg-black px-1">英単語,日本語,品詞(noun/verb/adj/adv/conj/idiom),カテゴリー(general/adv_conj/idiom)</span>
-                </p>
-                <textarea id="csv-input" rows="5" class="w-full bg-black rounded-xl p-3 text-xs font-mono text-zinc-300 focus:outline-none border border-zinc-800 mb-3 custom-scroll" placeholder="apple,りんご,noun,general&#10;look for,〜を探す,idiom,idiom"></textarea>
-                <button onclick="importCSV()" class="w-full bg-purple-600 text-white font-black py-3 rounded-xl active:scale-95 transition-transform flex justify-center items-center gap-2">
-                    <i data-lucide="download" class="w-4 h-4"></i> 一括インポート。
+            <div class="space-y-6">
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-3 ml-1">Daily Session Settings</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
+                            <span class="text-[9px] text-zinc-500 block mb-1 font-bold uppercase">Word Count</span>
+                            <select id="count-setting" class="bg-transparent font-bold w-full focus:outline-none text-white appearance-none cursor-pointer">
+                                <option value="10" class="bg-zinc-900">10 Words</option>
+                                <option value="30" class="bg-zinc-900" selected>30 Words</option>
+                                <option value="50" class="bg-zinc-900">50 Words</option>
+                            </select>
+                        </div>
+                        <div class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
+                            <span class="text-[9px] text-zinc-500 block mb-1 font-bold uppercase">Perfect Limit</span>
+                            <select id="timer-setting" class="bg-transparent font-bold w-full focus:outline-none text-white appearance-none cursor-pointer">
+                                <option value="1000" class="bg-zinc-900" selected>1.0s (Fast)</option>
+                                <option value="1500" class="bg-zinc-900">1.5s (Mid)</option>
+                                <option value="2000" class="bg-zinc-900">2.0s (Relax)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-3 ml-1">Learning Priority</label>
+                    <div class="flex p-1 bg-zinc-900 rounded-2xl border border-zinc-800">
+                        <button onclick="setMode('attack')" id="mode-attack" class="mode-btn flex-1 py-3 rounded-xl font-bold text-xs transition-all bg-white text-black">ATTACK</button>
+                        <button onclick="setMode('balance')" id="mode-balance" class="mode-btn flex-1 py-3 rounded-xl font-bold text-xs transition-all text-zinc-500">BALANCE</button>
+                        <button onclick="setMode('review')" id="mode-review" class="mode-btn flex-1 py-3 rounded-xl font-bold text-xs transition-all text-zinc-500">REVIEW</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 space-y-3">
+                <button onclick="startSession()" class="w-full bg-white text-black font-bold py-6 rounded-3xl text-xl shadow-2xl active:scale-95 transition-transform flex items-center justify-center gap-3">
+                    <i data-lucide="zap" class="fill-current w-6 h-6"></i>
+                    <span id="start-btn-text">START SESSION</span>
                 </button>
-                <div id="import-log" class="text-[10px] text-green-400 mt-2 text-center font-bold"></div>
+                <button id="flame-btn" onclick="startSession(true)" class="w-full bg-orange-600/10 text-orange-500 font-bold py-4 rounded-3xl text-sm flex items-center justify-center gap-2 opacity-50 cursor-not-allowed border border-orange-500/20" disabled>
+                    <i data-lucide="flame" class="w-5 h-5"></i>
+                    <span>WEAK FOCUS</span>
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- Learning Screen -->
-    <div id="learning-screen" class="hidden w-full max-w-md h-screen relative flex flex-col p-6">
-        <div class="flex items-center justify-between mb-6">
-            <button onclick="quitApp()" class="p-2 -ml-2 text-zinc-500 active:text-white"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
-            <div class="flex-1 mx-6 bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div id="timer-bar" class="timer-bar bg-white h-full w-full"></div>
+        <div id="learning-screen" class="hidden absolute inset-0 bg-black flex flex-col p-6 z-40">
+            <div class="flex items-center justify-between mb-6">
+                <button onclick="confirmQuit()" class="p-2 -ml-2 text-zinc-500 active:text-white"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <div class="flex-1 mx-6 bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                    <div id="timer-bar" class="timer-bar bg-white h-full w-full"></div>
+                </div>
+                <span id="progress-text" class="text-xs font-bold font-mono text-zinc-500 tracking-tighter">00/00</span>
             </div>
-            <span id="progress-text" class="text-xs font-black font-mono text-zinc-500 tracking-tighter">00/00</span>
-        </div>
 
-        <div class="flex-1 relative flex items-center justify-center" id="swipe-area">
-            <div id="main-card" class="swipe-card w-full h-[480px] rounded-[48px] flex flex-col items-center justify-center shadow-2xl p-8 relative">
-                <div id="pos-badge" class="absolute top-10 left-10 px-5 py-1.5 rounded-full bg-black/20 text-[10px] font-black uppercase tracking-[0.2em]">NOUN</div>
-                <h2 id="english-word" class="text-5xl font-black mb-6 text-center tracking-tighter break-words w-full">word</h2>
-                
-                <div id="answer-section" class="hidden flex flex-col items-center text-center w-full">
-                    <div class="h-0.5 w-16 bg-white/20 my-6 rounded-full"></div>
-                    <p id="jp-pos" class="text-[11px] font-black text-white/60 mb-1 tracking-widest bg-black/20 px-3 py-1 rounded-lg">【名詞】</p>
-                    <p id="japanese-meaning" class="text-3xl font-black mb-4 tracking-tighter leading-tight">意味内容</p>
-                    <p id="collocation" class="text-sm opacity-80 font-medium italic mb-8 max-w-xs leading-snug">Example phrase</p>
+            <div class="flex-1 relative flex items-center justify-center" id="swipe-area">
+                <div id="main-card" class="swipe-card w-full h-[480px] rounded-[48px] flex flex-col items-center justify-center shadow-2xl p-8 relative">
+                    <div id="pos-badge" class="absolute top-10 left-10 px-5 py-1.5 rounded-full bg-black/20 text-[10px] font-bold uppercase tracking-[0.2em]">NOUN</div>
+                    <h2 id="english-word" class="text-5xl font-bold mb-6 text-center tracking-tighter break-words w-full">word</h2>
                     
-                    <div id="up-controls" class="hidden w-full space-y-4 px-2">
-                        <div id="speed-tag" class="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 mb-2">PERFECT</div>
-                        <div class="flex gap-3">
-                            <button onclick="submitResponse(false)" class="flex-1 bg-black/30 py-4 rounded-2xl flex flex-col items-center border border-white/5 active:bg-black/50">
-                                <i data-lucide="x" class="w-5 h-5 mb-1 text-red-400"></i><span class="text-[9px] font-black uppercase tracking-widest text-red-400">実はミス</span>
-                            </button>
-                            <button onclick="submitResponse(true)" class="flex-1 bg-white text-black font-black py-4 rounded-2xl flex flex-col items-center shadow-2xl active:scale-95">
-                                <i data-lucide="check" class="w-5 h-5 mb-1 text-green-600"></i><span class="text-[9px] font-black uppercase tracking-widest">正解</span>
+                    <div id="answer-section" class="hidden flex flex-col items-center text-center w-full">
+                        <div class="h-0.5 w-16 bg-white/20 my-6 rounded-full"></div>
+                        <p id="jp-pos" class="text-[11px] font-bold text-white/60 mb-1 tracking-widest bg-black/20 px-3 py-1 rounded-lg"></p>
+                        <p id="japanese-meaning" class="text-3xl font-bold mb-4 tracking-tighter leading-tight"></p>
+                        <p id="collocation" class="text-sm opacity-80 font-medium italic mb-8 max-w-xs leading-snug"></p>
+                        
+                        <div id="up-controls" class="hidden w-full space-y-4 px-2">
+                            <div id="speed-tag" class="text-[10px] font-bold uppercase tracking-[0.3em] text-white/50 mb-2">PERFECT</div>
+                            <div class="flex gap-3">
+                                <button onclick="submitResponse(false)" class="flex-1 bg-black/30 py-4 rounded-2xl flex flex-col items-center border border-white/5 active:bg-black/50">
+                                    <i data-lucide="x" class="w-5 h-5 mb-1 text-red-400"></i><span class="text-[9px] font-bold uppercase tracking-widest text-red-400">実はミス</span>
+                                </button>
+                                <button onclick="submitResponse(true)" class="flex-1 bg-white text-black font-bold py-4 rounded-2xl flex flex-col items-center shadow-2xl active:scale-95">
+                                    <i data-lucide="check" class="w-5 h-5 mb-1 text-green-600"></i><span class="text-[9px] font-bold uppercase tracking-widest">正解</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="down-controls" class="hidden w-full px-2">
+                            <button onclick="submitResponse(false)" class="w-full bg-white text-black font-bold py-5 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95">
+                                <span class="mr-2 uppercase tracking-widest text-sm">Next Word</span><i data-lucide="chevron-right" class="w-5 h-5"></i>
                             </button>
                         </div>
                     </div>
-                    <div id="down-controls" class="hidden w-full px-2">
-                        <button onclick="submitResponse(false)" class="w-full bg-white text-black font-black py-5 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95">
-                            <span class="mr-2 uppercase tracking-widest text-sm">Next Word</span><i data-lucide="chevron-right" class="w-5 h-5"></i>
-                        </button>
-                    </div>
+                    <div id="instruction" class="absolute bottom-10 text-[10px] font-bold text-white/30 tracking-[0.4em] uppercase">UP: Know / DOWN: Forgot</div>
                 </div>
-                <div id="instruction" class="absolute bottom-10 text-[10px] font-black text-white/30 tracking-[0.4em] uppercase">UP: Know / DOWN: Forgot</div>
             </div>
         </div>
-    </div>
 
-    <!-- Result Screen -->
-    <div id="result-screen" class="hidden w-full max-w-md h-screen p-8 flex flex-col overflow-y-auto custom-scroll">
-        <div class="text-center mt-12 mb-12">
-            <h2 class="text-5xl font-black mb-2 tracking-tighter italic">FINISH</h2>
-            <p id="result-encouragement" class="text-zinc-500 text-xs font-bold uppercase tracking-widest">Keep pushing your limits.</p>
+        <div id="result-screen" class="hidden absolute inset-0 bg-black flex flex-col p-6 z-40 overflow-hidden">
+            <div class="flex-1 overflow-y-auto custom-scroll pr-1 pb-4">
+                <div class="text-center mt-12 mb-12">
+                    <h2 class="text-5xl font-bold mb-2 tracking-tighter italic">FINISH</h2>
+                    <p id="result-encouragement" class="text-zinc-500 text-xs font-bold uppercase tracking-widest">Keep pushing your limits.</p>
+                </div>
+                <div class="grid grid-cols-3 gap-3 mb-12">
+                    <div class="bg-zinc-900 rounded-[32px] p-5 text-center border border-zinc-800"><div id="res-perfect" class="text-3xl font-bold text-blue-500">0</div><div class="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-2">Perfect</div></div>
+                    <div class="bg-zinc-900 rounded-[32px] p-5 text-center border border-zinc-800"><div id="res-good" class="text-3xl font-bold text-green-500">0</div><div class="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-2">Good</div></div>
+                    <div class="bg-zinc-900 rounded-[32px] p-5 text-center border border-zinc-800"><div id="res-retry" class="text-3xl font-bold text-red-500">0</div><div class="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-2">Retry</div></div>
+                </div>
+                <div>
+                    <h3 class="text-[10px] font-bold text-zinc-500 mb-5 uppercase tracking-[0.3em]">Review Required</h3>
+                    <div id="missed-list" class="space-y-3 mb-12"></div>
+                </div>
+            </div>
+            <div class="pt-4 pb-8 bg-black">
+                <button onclick="goToHome()" class="w-full bg-white text-black font-bold py-6 rounded-3xl text-xl active:scale-95 transition-transform shadow-2xl">DONE</button>
+            </div>
         </div>
-        <div class="grid grid-cols-3 gap-3 mb-12">
-            <div class="bg-zinc-900 rounded-[32px] p-5 text-center border border-zinc-800"><div id="res-perfect" class="text-3xl font-black text-blue-500">0</div><div class="text-[8px] text-zinc-500 font-black uppercase tracking-widest mt-2">Perfect</div></div>
-            <div class="bg-zinc-900 rounded-[32px] p-5 text-center border border-zinc-800"><div id="res-good" class="text-3xl font-black text-green-500">0</div><div class="text-[8px] text-zinc-500 font-black uppercase tracking-widest mt-2">Good</div></div>
-            <div class="bg-zinc-900 rounded-[32px] p-5 text-center border border-zinc-800"><div id="res-retry" class="text-3xl font-black text-red-500">0</div><div class="text-[8px] text-zinc-500 font-black uppercase tracking-widest mt-2">Retry</div></div>
+
+        <div id="add-word-modal" class="hidden absolute inset-0 bg-black/95 z-50 flex flex-col p-6 overflow-y-auto custom-scroll backdrop-blur-md">
+            <div class="w-full max-w-md mt-10">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold tracking-tighter italic">DATABASE</h3>
+                    <button onclick="closeAddWordModal()" class="p-2 text-zinc-500 active:text-white bg-zinc-900 rounded-full border border-zinc-800"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                
+                <div class="bg-zinc-900 rounded-[32px] p-6 border border-zinc-800 shadow-xl mb-6">
+                    <h4 class="text-[10px] font-bold text-blue-500 mb-4 uppercase tracking-[0.3em] border-b border-zinc-800 pb-2">Single Add</h4>
+                    <div class="space-y-3">
+                        <select id="new-word-category" class="w-full bg-black rounded-xl p-3 text-sm font-bold text-white focus:outline-none border border-zinc-800">
+                            <option value="general">一般単語</option><option value="adv_conj">副詞・接続詞混合</option><option value="idiom">イディオム</option>
+                        </select>
+                        <input type="text" id="new-word-eng" class="w-full bg-black rounded-xl p-3 text-lg font-bold text-white focus:outline-none border border-zinc-800" placeholder="English Word">
+                        <input type="text" id="new-word-jpn" class="w-full bg-black rounded-xl p-3 text-sm font-bold text-white focus:outline-none border border-zinc-800" placeholder="日本語の意味">
+                        <select id="new-word-pos" class="w-full bg-black rounded-xl p-3 text-sm font-bold text-white focus:outline-none border border-zinc-800">
+                            <option value="noun">名詞</option><option value="verb">動詞</option><option value="adj">形容詞</option>
+                            <option value="adv">副詞</option><option value="conj">接続詞</option><option value="idiom">熟語</option>
+                        </select>
+                        <button onclick="saveNewWord()" class="w-full bg-white text-black font-bold py-3 rounded-xl mt-2 active:scale-95 transition-transform">追加する</button>
+                    </div>
+                </div>
+
+                <div class="bg-zinc-900 rounded-[32px] p-6 border border-zinc-800 shadow-xl mb-20">
+                    <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+                        <h4 class="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.3em]">Vocabulary List</h4>
+                        <span id="db-total-count" class="text-[10px] font-bold bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-500">0 Items</span>
+                    </div>
+                    <div id="full-word-list" class="space-y-2 max-h-[500px] overflow-y-auto custom-scroll pr-1"></div>
+                </div>
+            </div>
         </div>
-        <div class="flex-1 min-h-[200px]">
-            <h3 class="text-[10px] font-black text-zinc-500 mb-5 uppercase tracking-[0.3em]">Review Required</h3>
-            <div id="missed-list" class="space-y-3 mb-10"></div>
+
+        <div id="confirm-modal" class="hidden absolute inset-0 bg-black/80 z-[100] flex items-center justify-center p-8 backdrop-blur-sm">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-[32px] p-8 w-full max-w-xs text-center">
+                <h4 class="text-xl font-bold mb-2">QUIT SESSION?</h4>
+                <p class="text-zinc-500 text-xs mb-8">進捗は保存されません</p>
+                <div class="flex gap-4">
+                    <button onclick="closeConfirm()" class="flex-1 py-4 rounded-2xl bg-zinc-800 font-bold text-xs">NO</button>
+                    <button onclick="goToHome()" class="flex-1 py-4 rounded-2xl bg-red-600 text-white font-bold text-xs">QUIT</button>
+                </div>
+            </div>
         </div>
-        <div class="pb-10"><button onclick="goToHome()" class="w-full bg-white text-black font-black py-6 rounded-3xl text-xl active:scale-95 transition-transform">DONE</button></div>
+
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js')); }
-
-        // ガチの初期搭載コア単語リスト
         const MASTER_VOCAB =[
-            // リハビリ〜TOEIC頻出一般 (general)
-{w:"provide", m:"提供する", p:"verb", category:"general", c:"provide information"},
-{w:"require", m:"〜を必要とする", p:"verb", category:"general", c:"require a signature"},
-{w:"available", m:"手に入る・都合がつく", p:"adj", category:"general", c:"available for a meeting"},
-{w:"notice", m:"通知・掲示・気づく", p:"noun", category:"general", c:"at short notice"},
-{w:"apply", m:"申し込む・適用する", p:"verb", category:"general", c:"apply for a position"},
-{w:"submit", m:"提出する", p:"verb", category:"general", c:"submit a report"},
-{w:"confirm", m:"確認する", p:"verb", category:"general", c:"confirm the reservation"},
-{w:"equipment", m:"機器・設備", p:"noun", category:"general", c:"office equipment"},
-{w:"facility", m:"施設・設備", p:"noun", category:"general", c:"sports facility"},
-{w:"opportunity", m:"機会", p:"noun", category:"general", c:"business opportunity"},
-{w:"address", m:"対処する・話しかける", p:"verb", category:"general", c:"address the problem"},
-{w:"assume", m:"引き受ける・想定する", p:"verb", category:"general", c:"assume responsibility"},
-{w:"issue", m:"発行する・問題・（雑誌の）号", p:"verb", category:"general", c:"issue a refund"},
-{w:"outstanding", m:"未払いの・傑出した", p:"adj", category:"general", c:"outstanding balance"},
-{w:"unless", m:"〜しない限り", p:"conj", category:"adv_conj", c:"unless otherwise noted"},
-{w:"nevertheless", m:"それにもかかわらず", p:"adv", category:"adv_conj", c:"Nevertheless, we succeeded."},
-{w:"furthermore", m:"さらに", p:"adv", category:"adv_conj", c:"Furthermore, it is free."},
-{w:"provided that", m:"〜という条件で", p:"conj", category:"adv_conj", c:"provided that you pay"},
-{w:"look forward to", m:"〜を楽しみに待つ", p:"idiom", category:"idiom", c:"look forward to seeing you"},
-{w:"on behalf of", m:"〜を代表して", p:"idiom", category:"idiom", c:"on behalf of our company"},
-{w:"take advantage of", m:"〜を利用する", p:"idiom", category:"idiom", c:"take advantage of the sale"},
-{w:"representative", m:"担当者・代表者", p:"noun", category:"general", c:"customer service representative"},
-{w:"postpone", m:"延期する", p:"verb", category:"general", c:"postpone the meeting"},
-{w:"cancel", m:"中止する", p:"verb", category:"general", c:"cancel the reservation"},
-{w:"strategy", m:"戦略", p:"noun", category:"general", c:"marketing strategy"},
-{w:"candidate", m:"候補者", p:"noun", category:"general", c:"job candidate"},
-{w:"resume", m:"履歴書・再開する", p:"noun", category:"general", c:"send a resume"},
-{w:"interview", m:"面接", p:"noun", category:"general", c:"job interview"},
-{w:"reference", m:"参照・紹介先", p:"noun", category:"general", c:"reference letter"},
-{w:"qualification", m:"資格・能力", p:"noun", category:"general", c:"professional qualification"},
-{w:"requirement", m:"必要条件", p:"noun", category:"general", c:"minimum requirement"},
-{w:"policy", m:"方針・規定・保険証券", p:"noun", category:"general", c:"company policy"},
-{w:"procedure", m:"手順・手続き", p:"noun", category:"general", c:"standard procedure"},
-{w:"contract", m:"契約・契約書", p:"noun", category:"general", c:"sign a contract"},
-{w:"agreement", m:"合意・契約", p:"noun", category:"general", c:"reach an agreement"},
-{w:"term", m:"条件・期間・用語", p:"noun", category:"general", c:"terms and conditions"},
-{w:"condition", m:"条件・状態", p:"noun", category:"general", c:"working conditions"},
-{w:"provision", m:"規定・提供", p:"noun", category:"general", c:"under the provisions"},
-{w:"clause", m:"条項", p:"noun", category:"general", c:"a clause in the contract"},
-{w:"penalty", m:"罰金・罰則", p:"noun", category:"general", c:"pay a penalty"},
-{w:"comply", m:"従う・遵守する", p:"verb", category:"general", c:"comply with regulations"},
-{w:"regulation", m:"規制・規則", p:"noun", category:"general", c:"safety regulations"},
-{w:"safety", m:"安全", p:"noun", category:"general", c:"safety standards"},
-{w:"standard", m:"基準・標準", p:"noun", category:"general", c:"meet the standards"},
-{w:"measure", m:"対策・措置・測る", p:"noun", category:"general", c:"safety measures"},
-{w:"inspection", m:"検査・点検", p:"noun", category:"general", c:"regular inspection"},
-{w:"maintenance", m:"整備・維持", p:"noun", category:"general", c:"maintenance work"},
-{w:"repair", m:"修理", p:"verb", category:"general", c:"repair the machine"},
-{w:"renovation", m:"改修・リフォーム", p:"noun", category:"general", c:"building renovation"},
-{w:"installation", m:"設置・導入", p:"noun", category:"general", c:"software installation"},
-{w:"operation", m:"運営・操作・営業", p:"noun", category:"general", c:"hours of operation"},
-{w:"efficiency", m:"効率", p:"noun", category:"general", c:"fuel efficiency"},
-{w:"productivity", m:"生産性", p:"noun", category:"general", c:"increase productivity"},
-{w:"output", m:"出力・生産量", p:"noun", category:"general", c:"industrial output"},
-{w:"inventory", m:"在庫・棚卸し", p:"noun", category:"general", c:"inventory control"},
-{w:"stock", m:"在庫・株式", p:"noun", category:"general", c:"out of stock"},
-{w:"warehouse", m:"倉庫", p:"noun", category:"general", c:"stored in a warehouse"},
-{w:"logistics", m:"物流", p:"noun", category:"general", c:"logistics company"},
-{w:"shipment", m:"積み荷・発送", p:"noun", category:"general", c:"track a shipment"},
-{w:"delivery", m:"配達", p:"noun", category:"general", c:"delivery service"},
-{w:"cargo", m:"貨物", p:"noun", category:"general", c:"cargo ship"},
-{w:"freight", m:"運賃・貨物", p:"noun", category:"general", c:"air freight"},
-{w:"courier", m:"宅配業者", p:"noun", category:"general", c:"sent by courier"},
-{w:"tracking", m:"追跡", p:"noun", category:"general", c:"tracking number"},
-{w:"status", m:"状況・状態", p:"noun", category:"general", c:"order status"},
-{w:"delay", m:"遅延", p:"noun", category:"general", c:"flight delay"},
-{w:"transportation", m:"輸送・交通手段", p:"noun", category:"general", c:"public transportation"},
-{w:"commute", m:"通勤", p:"verb", category:"general", c:"commute to work"},
-{w:"passenger", m:"乗客", p:"noun", category:"general", c:"passenger train"},
-{w:"transit", m:"通過・乗り換え", p:"noun", category:"general", c:"in transit"},
-{w:"destination", m:"目的地", p:"noun", category:"general", c:"final destination"},
-{w:"accommodation", m:"宿泊施設", p:"noun", category:"general", c:"hotel accommodation"},
-{w:"reservation", m:"予約", p:"noun", category:"general", c:"make a reservation"},
-{w:"itinerary", m:"旅行日程", p:"noun", category:"general", c:"travel itinerary"},
-{w:"reception", m:"受付・歓迎会", p:"noun", category:"general", c:"wedding reception"},
-{w:"banquet", m:"宴会", p:"noun", category:"general", c:"awards banquet"},
-{w:"exhibition", m:"展示会", p:"noun", category:"general", c:"art exhibition"},
-{w:"conference", m:"会議", p:"noun", category:"general", c:"press conference"},
-{w:"convention", m:"大会・慣習", p:"noun", category:"general", c:"annual convention"},
-{w:"seminar", m:"セミナー", p:"noun", category:"general", c:"training seminar"},
-{w:"workshop", m:"講習会", p:"noun", category:"general", c:"photography workshop"},
-{w:"agenda", m:"協議事項", p:"noun", category:"general", c:"on the agenda"},
-{w:"minutes", m:"議事録・分", p:"noun", category:"general", c:"meeting minutes"},
-{w:"vote", m:"投票", p:"verb", category:"general", c:"vote for the proposal"},
-{w:"consensus", m:"合意", p:"noun", category:"general", c:"reach a consensus"},
-{w:"proposal", m:"提案", p:"noun", category:"general", c:"business proposal"},
-{w:"suggestion", m:"提案", p:"noun", category:"general", c:"make a suggestion"},
-{w:"recommendation", m:"推薦", p:"noun", category:"general", c:"letter of recommendation"},
-{w:"feedback", m:"評価・感想", p:"noun", category:"general", c:"positive feedback"},
-{w:"survey", m:"アンケート・調査", p:"noun", category:"general", c:"customer survey"},
-{w:"questionnaire", m:"質問票", p:"noun", category:"general", c:"fill out a questionnaire"},
-{w:"response", m:"返答・反応", p:"noun", category:"general", c:"quick response"},
-{w:"comment", m:"コメント", p:"noun", category:"general", c:"no comment"},
-{w:"enquiry", m:"問い合わせ", p:"noun", category:"general", c:"general enquiry"},
-{w:"notification", m:"通知", p:"noun", category:"general", c:"email notification"},
-{w:"announcement", m:"発表", p:"noun", category:"general", c:"make an announcement"},
-{w:"press release", m:"プレスリリース", p:"noun", category:"general", c:"issue a press release"},
-{w:"advertisement", m:"広告", p:"noun", category:"general", c:"newspaper advertisement"},
-{w:"promotion", m:"昇進・販促", p:"noun", category:"general", c:"sales promotion"},
-            {w:"expand", m:"拡大する・拡張する", p:"verb", category:"general", c:"expand the business"},
+            {w:"provide", m:"提供する", p:"verb", category:"general", c:"provide information"},
+ {w:"require", m:"〜を必要とする", p:"verb", category:"general", c:"require a signature"},
+ {w:"available", m:"手に入る・都合がつく", p:"adj", category:"general", c:"available for a meeting"},
+ {w:"notice", m:"通知・掲示・気づく", p:"noun", category:"general", c:"at short notice"},
+ {w:"apply", m:"申し込む・適用する", p:"verb", category:"general", c:"apply for a position"},
+ {w:"submit", m:"提出する", p:"verb", category:"general", c:"submit a report"},
+ {w:"confirm", m:"確認する", p:"verb", category:"general", c:"confirm the reservation"},
+ {w:"equipment", m:"機器・設備", p:"noun", category:"general", c:"office equipment"},
+ {w:"facility", m:"施設・設備", p:"noun", category:"general", c:"sports facility"},
+ {w:"opportunity", m:"機会", p:"noun", category:"general", c:"business opportunity"},
+ {w:"address", m:"対処する・話しかける", p:"verb", category:"general", c:"address the problem"},
+ {w:"assume", m:"引き受ける・想定する", p:"verb", category:"general", c:"assume responsibility"},
+ {w:"issue", m:"発行する・問題・（雑誌の）号", p:"verb", category:"general", c:"issue a refund"},
+ {w:"outstanding", m:"未払いの・傑出した", p:"adj", category:"general", c:"outstanding balance"},
+ {w:"unless", m:"〜しない限り", p:"conj", category:"adv_conj", c:"unless otherwise noted"},
+ {w:"nevertheless", m:"それにもかかわらず", p:"adv", category:"adv_conj", c:"Nevertheless, we succeeded."},
+ {w:"consequently", m:"その結果として", p:"adv", category:"adv_conj", c:"Consequently, the price rose."},
+ {w:"furthermore", m:"さらに", p:"adv", category:"adv_conj", c:"Furthermore, it is free."},
+ {w:"provided that", m:"〜という条件で", p:"conj", category:"adv_conj", c:"provided that you pay"},
+ {w:"look forward to", m:"〜を楽しみに待つ", p:"idiom", category:"idiom", c:"look forward to seeing you"},
+ {w:"on behalf of", m:"〜を代表して", p:"idiom", category:"idiom", c:"on behalf of our company"},
+ {w:"take advantage of", m:"〜を利用する", p:"idiom", category:"idiom", c:"take advantage of the sale"},
+ {w:"representative", m:"担当者・代表者", p:"noun", category:"general", c:"customer service representative"},
+ {w:"postpone", m:"延期する", p:"verb", category:"general", c:"postpone the meeting"},
+ {w:"cancel", m:"中止する", p:"verb", category:"general", c:"cancel the reservation"},
+ {w:"strategy", m:"戦略", p:"noun", category:"general", c:"marketing strategy"},
+ {w:"candidate", m:"候補者", p:"noun", category:"general", c:"job candidate"},
+ {w:"resume", m:"履歴書・再開する", p:"noun", category:"general", c:"send a resume"},
+ {w:"interview", m:"面接", p:"noun", category:"general", c:"job interview"},
+ {w:"reference", m:"参照・紹介先", p:"noun", category:"general", c:"reference letter"},
+ {w:"qualification", m:"資格・能力", p:"noun", category:"general", c:"professional qualification"},
+ {w:"requirement", m:"必要条件", p:"noun", category:"general", c:"minimum requirement"},
+ {w:"policy", m:"方針・規定・保険証券", p:"noun", category:"general", c:"company policy"},
+ {w:"procedure", m:"手順・手続き", p:"noun", category:"general", c:"standard procedure"},
+ {w:"contract", m:"契約・契約書", p:"noun", category:"general", c:"sign a contract"},
+ {w:"agreement", m:"合意・契約", p:"noun", category:"general", c:"reach an agreement"},
+ {w:"term", m:"条件・期間・用語", p:"noun", category:"general", c:"terms and conditions"},
+ {w:"condition", m:"条件・状態", p:"noun", category:"general", c:"working conditions"},
+ {w:"provision", m:"規定・提供", p:"noun", category:"general", c:"under the provisions"},
+ {w:"clause", m:"条項", p:"noun", category:"general", c:"a clause in the contract"},
+ {w:"penalty", m:"罰金・罰則", p:"noun", category:"general", c:"pay a penalty"},
+ {w:"comply", m:"従う・遵守する", p:"verb", category:"general", c:"comply with regulations"},
+ {w:"regulation", m:"規制・規則", p:"noun", category:"general", c:"safety regulations"},
+ {w:"safety", m:"安全", p:"noun", category:"general", c:"safety standards"},
+ {w:"standard", m:"基準・標準", p:"noun", category:"general", c:"meet the standards"},
+ {w:"measure", m:"対策・措置・測る", p:"noun", category:"general", c:"safety measures"},
+ {w:"inspection", m:"検査・点検", p:"noun", category:"general", c:"regular inspection"},
+ {w:"maintenance", m:"整備・維持", p:"noun", category:"general", c:"maintenance work"},
+ {w:"repair", m:"修理", p:"verb", category:"general", c:"repair the machine"},
+ {w:"renovation", m:"改修・リフォーム", p:"noun", category:"general", c:"building renovation"},
+ {w:"installation", m:"設置・導入", p:"noun", category:"general", c:"software installation"},
+ {w:"operation", m:"運営・操作・営業", p:"noun", category:"general", c:"hours of operation"},
+ {w:"efficiency", m:"効率", p:"noun", category:"general", c:"fuel efficiency"},
+ {w:"productivity", m:"生産性", p:"noun", category:"general", c:"increase productivity"},
+ {w:"output", m:"出力・生産量", p:"noun", category:"general", c:"industrial output"},
+ {w:"inventory", m:"在庫・棚卸し", p:"noun", category:"general", c:"inventory control"},
+ {w:"stock", m:"在庫・株式", p:"noun", category:"general", c:"out of stock"},
+ {w:"warehouse", m:"倉庫", p:"noun", category:"general", c:"stored in a warehouse"},
+ {w:"logistics", m:"物流", p:"noun", category:"general", c:"logistics company"},
+ {w:"shipment", m:"積み荷・発送", p:"noun", category:"general", c:"track a shipment"},
+ {w:"delivery", m:"配達", p:"noun", category:"general", c:"delivery service"},
+ {w:"cargo", m:"貨物", p:"noun", category:"general", c:"cargo ship"},
+ {w:"freight", m:"運賃・貨物", p:"noun", category:"general", c:"air freight"},
+ {w:"courier", m:"宅配業者", p:"noun", category:"general", c:"sent by courier"},
+ {w:"tracking", m:"追跡", p:"noun", category:"general", c:"tracking number"},
+ {w:"status", m:"状況・状態", p:"noun", category:"general", c:"order status"},
+ {w:"delay", m:"遅延", p:"noun", category:"general", c:"flight delay"},
+ {w:"transportation", m:"輸送・交通手段", p:"noun", category:"general", c:"public transportation"},
+ {w:"commute", m:"通勤", p:"verb", category:"general", c:"commute to work"},
+ {w:"passenger", m:"乗客", p:"noun", category:"general", c:"passenger train"},
+ {w:"transit", m:"通過・乗り換え", p:"noun", category:"general", c:"in transit"},
+ {w:"destination", m:"目的地", p:"noun", category:"general", c:"final destination"},
+ {w:"accommodation", m:"宿泊施設", p:"noun", category:"general", c:"hotel accommodation"},
+ {w:"reservation", m:"予約", p:"noun", category:"general", c:"make a reservation"},
+ {w:"itinerary", m:"旅行日程", p:"noun", category:"general", c:"travel itinerary"},
+ {w:"reception", m:"受付・歓迎会", p:"noun", category:"general", c:"wedding reception"},
+ {w:"banquet", m:"宴会", p:"noun", category:"general", c:"awards banquet"},
+ {w:"exhibition", m:"展示会", p:"noun", category:"general", c:"art exhibition"},
+ {w:"conference", m:"会議", p:"noun", category:"general", c:"press conference"},
+ {w:"convention", m:"大会・慣習", p:"noun", category:"general", c:"annual convention"},
+ {w:"seminar", m:"セミナー", p:"noun", category:"general", c:"training seminar"},
+ {w:"workshop", m:"講習会", p:"noun", category:"general", c:"photography workshop"},
+ {w:"agenda", m:"協議事項", p:"noun", category:"general", c:"on the agenda"},
+ {w:"minutes", m:"議事録・分", p:"noun", category:"general", c:"meeting minutes"},
+ {w:"vote", m:"投票", p:"verb", category:"general", c:"vote for the proposal"},
+ {w:"consensus", m:"合意", p:"noun", category:"general", c:"reach a consensus"},
+ {w:"proposal", m:"提案", p:"noun", category:"general", c:"business proposal"},
+ {w:"suggestion", m:"提案", p:"noun", category:"general", c:"make a suggestion"},
+ {w:"recommendation", m:"推薦", p:"noun", category:"general", c:"letter of recommendation"},
+ {w:"feedback", m:"評価・感想", p:"noun", category:"general", c:"positive feedback"},
+ {w:"survey", m:"アンケート・調査", p:"noun", category:"general", c:"customer survey"},
+ {w:"questionnaire", m:"質問票", p:"noun", category:"general", c:"fill out a questionnaire"},
+ {w:"response", m:"返答・反応", p:"noun", category:"general", c:"quick response"},
+ {w:"comment", m:"コメント", p:"noun", category:"general", c:"no comment"},
+ {w:"enquiry", m:"問い合わせ", p:"noun", category:"general", c:"general enquiry"},
+ {w:"notification", m:"通知", p:"noun", category:"general", c:"email notification"},
+ {w:"announcement", m:"発表", p:"noun", category:"general", c:"make an announcement"},
+ {w:"press release", m:"プレスリリース", p:"noun", category:"general", c:"issue a press release"},
+ {w:"advertisement", m:"広告", p:"noun", category:"general", c:"newspaper advertisement"},
+ {w:"promotion", m:"昇進・販促", p:"noun", category:"general", c:"sales promotion"}
+{w:"expand", m:"拡大する・拡張する", p:"verb", category:"general", c:"expand the business"},
  {w:"objective", m:"目標・目的・客観的な", p:"noun", category:"general", c:"achieve the objective"},
  {w:"strategic", m:"戦略的な", p:"adj", category:"general", c:"strategic planning"},
  {w:"implement", m:"実施する・導入する", p:"verb", category:"general", c:"implement a new system"},
@@ -412,7 +441,107 @@
  {w:"evaluation", m:"評価", p:"noun", category:"general", c:"program evaluation"},
  {w:"analysis", m:"分析", p:"noun", category:"general", c:"data analysis"},
  {w:"research", m:"研究・調査", p:"noun", category:"general", c:"market research"},
- {w:"investigation", m:"調査・捜査", p:"noun", category:"general", c:"under investigation"},
+ {w:"investigation", m:"調査・捜査", p:"noun", category:"general", c:"under investigation"}
+{w:"take over", m:"〜を引き継ぐ・買収する", p:"idiom", category:"idiom", c:"take over the business"},
+ {w:"set up", m:"〜を設置する・準備する", p:"idiom", category:"idiom", c:"set up a meeting"},
+ {w:"carry out", m:"〜を実行する", p:"idiom", category:"idiom", c:"carry out a survey"},
+ {w:"put off", m:"〜を延期する", p:"idiom", category:"idiom", c:"put off the decision"},
+ {w:"call off", m:"〜を中止する", p:"idiom", category:"idiom", c:"call off the event"},
+ {w:"go over", m:"〜を詳しく見直す", p:"idiom", category:"idiom", c:"go over the report"},
+ {w:"hand in", m:"〜を提出する", p:"idiom", category:"idiom", c:"hand in the assignment"},
+ {w:"fill out", m:"〜に記入する", p:"idiom", category:"idiom", c:"fill out the form"},
+ {w:"look into", m:"〜を調査する", p:"idiom", category:"idiom", c:"look into the matter"},
+ {w:"bring up", m:"〜を持ち出す・育てる", p:"idiom", category:"idiom", c:"bring up a new topic"},
+ {w:"turn down", m:"〜を断る・音量を下げる", p:"idiom", category:"idiom", c:"turn down the offer"},
+ {w:"work out", m:"〜を解決する・運動する", p:"idiom", category:"idiom", c:"work out a solution"},
+ {w:"come up with", m:"〜を思いつく", p:"idiom", category:"idiom", c:"come up with an idea"},
+ {w:"cut down on", m:"〜を削減する", p:"idiom", category:"idiom", c:"cut down on expenses"},
+ {w:"keep up with", m:"〜に遅れずについていく", p:"idiom", category:"idiom", c:"keep up with the news"},
+ {w:"get along with", m:"〜と仲良くやっていく", p:"idiom", category:"idiom", c:"get along with colleagues"},
+ {w:"make up for", m:"〜を埋め合わせる", p:"idiom", category:"idiom", c:"make up for the loss"},
+ {w:"look forward to", m:"〜を楽しみに待つ", p:"idiom", category:"idiom", c:"look forward to the trip"},
+ {w:"run out of", m:"〜を使い果たす", p:"idiom", category:"idiom", c:"run out of ink"},
+ {w:"be subject to", m:"〜の影響を受けやすい・〜を条件とする", p:"idiom", category:"idiom", c:"subject to change"},
+ {w:"prior to", m:"〜より前に", p:"idiom", category:"idiom", c:"prior to the departure"},
+ {w:"in terms of", m:"〜の点から", p:"idiom", category:"idiom", c:"in terms of quality"},
+ {w:"on behalf of", m:"〜を代表して", p:"idiom", category:"idiom", c:"on behalf of the staff"},
+ {w:"due to", m:"〜のせいで", p:"idiom", category:"idiom", c:"due to heavy rain"},
+ {w:"regardless of", m:"〜に関わらず", p:"idiom", category:"idiom", c:"regardless of the cost"},
+ {w:"in charge of", m:"〜の担当で", p:"idiom", category:"idiom", c:"in charge of sales"},
+ {w:"account for", m:"〜の割合を占める・説明する", p:"idiom", category:"idiom", c:"account for 30%"},
+ {w:"as for", m:"〜に関しては", p:"idiom", category:"idiom", c:"as for the price"},
+ {w:"back up", m:"〜を支持する・バックアップをとる", p:"idiom", category:"idiom", c:"back up the data"},
+ {w:"break down", m:"故障する・分析する", p:"idiom", category:"idiom", c:"the machine broke down"},
+ {w:"bring about", m:"〜を引き起こす", p:"idiom", category:"idiom", c:"bring about change"},
+ {w:"check out", m:"〜を調べる・チェックアウトする", p:"idiom", category:"idiom", c:"check out the website"},
+ {w:"deal with", m:"〜を扱う・対処する", p:"idiom", category:"idiom", c:"deal with customers"},
+ {w:"end up", m:"結局〜になる", p:"idiom", category:"idiom", c:"end up losing money"},
+ {w:"figure out", m:"〜を理解する・解決する", p:"idiom", category:"idiom", c:"figure out the problem"},
+ {w:"focus on", m:"〜に集中する", p:"idiom", category:"idiom", c:"focus on core business"},
+ {w:"get back to", m:"〜に折り返し連絡する", p:"idiom", category:"idiom", c:"get back to you later"},
+ {w:"give up", m:"〜を諦める", p:"idiom", category:"idiom", c:"don't give up"},
+ {w:"go ahead", m:"先に進める", p:"idiom", category:"idiom", c:"go ahead with the plan"},
+ {w:"hold on", m:"（電話で）待つ・持ちこたえる", p:"idiom", category:"idiom", c:"hold on a moment"},
+ {w:"keep on", m:"〜し続ける", p:"idiom", category:"idiom", c:"keep on trying"},
+ {w:"lay off", m:"〜を解雇する", p:"idiom", category:"idiom", c:"be laid off"},
+ {w:"lead to", m:"〜につながる・引き起こす", p:"idiom", category:"idiom", c:"lead to success"},
+ {w:"leave out", m:"〜を省く・除外する", p:"idiom", category:"idiom", c:"leave out the details"},
+ {w:"look after", m:"〜の世話をする", p:"idiom", category:"idiom", c:"look after the guests"},
+ {w:"look for", m:"〜を探す", p:"idiom", category:"idiom", c:"look for a job"},
+ {w:"make sure", m:"〜を確かめる", p:"idiom", category:"idiom", c:"make sure to call"},
+ {w:"pass out", m:"〜を配る・気絶する", p:"idiom", category:"idiom", c:"pass out brochures"},
+ {w:"point out", m:"〜を指摘する", p:"idiom", category:"idiom", c:"point out a mistake"},
+ {w:"put through", m:"（電話を）つなぐ", p:"idiom", category:"idiom", c:"put you through to him"},
+ {w:"rely on", m:"〜に頼る", p:"idiom", category:"idiom", c:"rely on the data"},
+ {w:"set forth", m:"〜を提示する・説明する", p:"idiom", category:"idiom", c:"set forth the terms"},
+ {w:"show up", m:"現れる", p:"idiom", category:"idiom", c:"show up on time"},
+ {w:"sign up for", m:"〜に登録する・申し込む", p:"idiom", category:"idiom", c:"sign up for the course"},
+ {w:"sort out", m:"〜を整理する・解決する", p:"idiom", category:"idiom", c:"sort out the issue"},
+ {w:"stand for", m:"〜を表す・象徴する", p:"idiom", category:"idiom", c:"what it stands for"},
+ {w:"take apart", m:"〜を分解する", p:"idiom", category:"idiom", c:"take the machine apart"},
+ {w:"take place", m:"（行事などが）行われる", p:"idiom", category:"idiom", c:"take place in Tokyo"},
+ {w:"talk over", m:"〜について話し合う", p:"idiom", category:"idiom", c:"talk over the plan"},
+ {w:"think over", m:"〜をじっくり考える", p:"idiom", category:"idiom", c:"think over the offer"},
+ {w:"try out", m:"〜を試す", p:"idiom", category:"idiom", c:"try out new software"},
+ {w:"turn out", m:"（結局）〜であることがわかる", p:"idiom", category:"idiom", c:"turn out to be true"},
+ {w:"use up", m:"〜を使い果たす", p:"idiom", category:"idiom", c:"use up all the paper"},
+ {w:"watch out", m:"〜に気をつける", p:"idiom", category:"idiom", c:"watch out for errors"},
+ {w:"write down", m:"〜を書き留める", p:"idiom", category:"idiom", c:"write down the address"},
+ {w:"at all times", m:"常に", p:"idiom", category:"idiom", c:"available at all times"},
+ {w:"by means of", m:"〜によって", p:"idiom", category:"idiom", c:"by means of transport"},
+ {w:"for the time being", m:"当面の間", p:"idiom", category:"idiom", c:"valid for the time being"},
+ {w:"in advance", m:"あらかじめ・事前に", p:"idiom", category:"idiom", c:"book in advance"},
+ {w:"in light of", m:"〜を考慮して", p:"idiom", category:"idiom", c:"in light of the results"},
+ {w:"in person", m:"直接会って", p:"idiom", category:"idiom", c:"visit in person"},
+ {w:"on purpose", m:"わざと・意図的に", p:"idiom", category:"idiom", c:"done on purpose"},
+ {w:"out of order", m:"故障して", p:"idiom", category:"idiom", c:"the elevator is out of order"},
+ {w:"up to date", m:"最新の", p:"idiom", category:"idiom", c:"up-to-date information"},
+ {w:"with respect to", m:"〜に関して", p:"idiom", category:"idiom", c:"with respect to the law"},
+ {w:"ahead of schedule", m:"予定より早く", p:"idiom", category:"idiom", c:"finished ahead of schedule"},
+ {w:"as a result of", m:"〜の結果として", p:"idiom", category:"idiom", c:"as a result of the merger"},
+ {w:"at any rate", m:"いずれにせよ", p:"idiom", category:"idiom", c:"at any rate, try it"},
+ {w:"by accident", m:"偶然に", p:"idiom", category:"idiom", c:"met him by accident"},
+ {w:"in common", m:"共通して", p:"idiom", category:"idiom", c:"have much in common"},
+ {w:"in detail", m:"詳細に", p:"idiom", category:"idiom", c:"explain in detail"},
+ {w:"in general", m:"一般的に", p:"idiom", category:"idiom", c:"in general terms"},
+ {w:"in haste", m:"急いで", p:"idiom", category:"idiom", c:"left in haste"},
+ {w:"in particular", m:"特に", p:"idiom", category:"idiom", c:"nothing in particular"},
+ {w:"in short", m:"要するに", p:"idiom", category:"idiom", c:"in short, it failed"},
+ {w:"on schedule", m:"予定通りに", p:"idiom", category:"idiom", c:"depart on schedule"},
+ {w:"out of date", m:"時代遅れの", p:"idiom", category:"idiom", c:"out-of-date records"},
+ {w:"under control", m:"管理されて・制御されて", p:"idiom", category:"idiom", c:"everything is under control"},
+ {w:"without fail", m:"必ず", p:"idiom", category:"idiom", c:"submit without fail"},
+ {w:"by all means", m:"ぜひとも・どうぞ", p:"idiom", category:"idiom", c:"By all means, come."},
+ {w:"in no time", m:"すぐに", p:"idiom", category:"idiom", c:"finished in no time"},
+ {w:"all in all", m:"概して・全体的に見て", p:"idiom", category:"idiom", c:"All in all, it was good."},
+ {w:"catch up with", m:"〜に追いつく", p:"idiom", category:"idiom", c:"catch up with the leaders"},
+ {w:"cope with", m:"〜に対処する", p:"idiom", category:"idiom", c:"cope with the workload"},
+ {w:"depend on", m:"〜に依存する・〜次第だ", p:"idiom", category:"idiom", c:"it depends on you"},
+ {w:"draw up", m:"（文書を）作成する", p:"idiom", category:"idiom", c:"draw up a contract"},
+ {w:"keep an eye on", m:"〜から目を離さない", p:"idiom", category:"idiom", c:"keep an eye on the child"},
+ {w:"look up to", m:"〜を尊敬する", p:"idiom", category:"idiom", c:"look up to his boss"},
+ {w:"put up with", m:"〜を我慢する", p:"idiom", category:"idiom", c:"put up with the noise"},
+ {w:"take into account", m:"〜を考慮に入れる", p:"idiom", category:"idiom", c:"take costs into account"}
 {w:"accept", m:"受け入れる", p:"verb", category:"general", c:"accept an offer"},
 {w:"add", m:"加える", p:"verb", category:"general", c:"add details"},
 {w:"allow", m:"許可する", p:"verb", category:"general", c:"allow him to go"},
@@ -512,7 +641,7 @@
 {w:"center", m:"中心", p:"noun", category:"general", c:"city center"},
 {w:"century", m:"世紀", p:"noun", category:"general", c:"21st century"},
 {w:"chance", m:"機会・見込み", p:"noun", category:"general", c:"have a chance"},
-{w:"character", m:"性格・登場人物", p:"noun", category:"general", c:"main character"},
+{w:"character", m:"性格・登場人物", p:"noun", category:"general", c:"main character"}
 {w:"accurate", m:"正確な", p:"adj", category:"general", c:"accurate measurements"},
  {w:"additional", m:"追加の", p:"adj", category:"general", c:"additional information"},
  {w:"adequate", m:"十分な・適切な", p:"adj", category:"general", c:"adequate preparation"},
@@ -812,11 +941,108 @@
 {w:"enterprise", m:"企業・事業", p:"noun", category:"general", c:"small enterprise"},
 {w:"environment", m:"環境", p:"noun", category:"general", c:"work environment"},
 {w:"equipment", m:"機器・設備", p:"noun", category:"general", c:"safety equipment"},
-{w:"establishment", m:"設立・施設", p:"noun", category:"general", c:"commercial establishment"},
+{w:"establishment", m:"設立・施設", p:"noun", category:"general", c:"commercial establishment"}
 {w:"lean", m:"寄りかかる", p:"verb", category:"general", c:"lean against the wall"},
 {w:"prop", m:"立てかける", p:"verb", category:"general", c:"be propped against the wall"},
 {w:"stack", m:"積み重ねる", p:"verb", category:"general", c:"stack boxes"},
-        {w:"cover", m:"報道する・まかなう・扱う", p:"verb", category:"general", c:"cover the event"},
+{w:"pile", m:"積み上げる", p:"verb", category:"general", c:"pile up the documents"},
+{w:"scatter", m:"散らばる", p:"verb", category:"general", c:"papers are scattered"},
+{w:"fold", m:"折りたたむ", p:"verb", category:"general", c:"fold a map"},
+{w:"sweep", m:"掃く", p:"verb", category:"general", c:"sweep the floor"},
+{w:"mop", m:"モップで拭く", p:"verb", category:"general", c:"mop the hallway"},
+{w:"wipe", m:"拭く", p:"verb", category:"general", c:"wipe the table"},
+{w:"adjust", m:"調整する", p:"verb", category:"general", c:"adjust the equipment"},
+{w:"admire", m:"眺める・感嘆する", p:"verb", category:"general", c:"admire a painting"},
+{w:"gaze", m:"見つめる", p:"verb", category:"general", c:"gaze out the window"},
+{w:"stare", m:"じっと見る", p:"verb", category:"general", c:"stare at the screen"},
+{w:"examine", m:"調べる", p:"verb", category:"general", c:"examine a document"},
+{w:"assemble", m:"組み立てる", p:"verb", category:"general", c:"assemble parts"},
+{w:"dismantle", m:"分解する", p:"verb", category:"general", c:"dismantle a machine"},
+{w:"load", m:"積み込む", p:"verb", category:"general", c:"load cargo"},
+{w:"unload", m:"降ろす", p:"verb", category:"general", c:"unload a truck"},
+{w:"pave", m:"舗装する", p:"verb", category:"general", c:"pave a road"},
+{w:"trim", m:"刈り込む", p:"verb", category:"general", c:"trim the bushes"},
+{w:"mow", m:"芝を刈る", p:"verb", category:"general", c:"mow the lawn"},
+{w:"water", m:"水をやる", p:"verb", category:"general", c:"water the plants"},
+{w:"plant", m:"植える", p:"verb", category:"general", c:"plant a tree"},
+{w:"pour", m:"注ぐ", p:"verb", category:"general", c:"pour water"},
+{w:"stir", m:"かき混ぜる", p:"verb", category:"general", c:"stir the soup"},
+{w:"slice", m:"薄く切る", p:"verb", category:"general", c:"slice the bread"},
+{w:"weigh", m:"重さを量る", p:"verb", category:"general", c:"weigh a package"},
+{w:"board", m:"乗り込む", p:"verb", category:"general", c:"board a train"},
+{w:"disembark", m:"降りる", p:"verb", category:"general", c:"disembark from a ship"},
+{w:"stroll", m:"ぶらぶら歩く", p:"verb", category:"general", c:"stroll in the park"},
+{w:"browse", m:"見て回る", p:"verb", category:"general", c:"browse the store"},
+{w:"display", m:"展示する", p:"verb", category:"general", c:"display items"},
+{w:"reflect", m:"反射する", p:"verb", category:"general", c:"reflect light"},
+{w:"stretch", m:"伸ばす", p:"verb", category:"general", c:"stretch arms"},
+{w:"tie", m:"結ぶ", p:"verb", category:"general", c:"tie a knot"},
+{w:"unfasten", m:"外す", p:"verb", category:"general", c:"unfasten a seatbelt"},
+{w:"suspend", m:"吊るす", p:"verb", category:"general", c:"suspend a light"},
+{w:"mount", m:"据え付ける", p:"verb", category:"general", c:"mount a TV"},
+{w:"plug", m:"プラグを差し込む", p:"verb", category:"general", c:"plug in a cord"},
+{w:"unplug", m:"プラグを抜く", p:"verb", category:"general", c:"unplug a device"},
+{w:"secure", m:"固定する", p:"verb", category:"general", c:"secure a boat"},
+{w:"dock", m:"停泊させる", p:"verb", category:"general", c:"dock a ship"},
+{w:"float", m:"浮かぶ", p:"verb", category:"general", c:"float on the water"},
+{w:"ascend", m:"上がる", p:"verb", category:"general", c:"ascend the stairs"},
+{w:"descend", m:"下りる", p:"verb", category:"general", c:"descend the stairs"},
+{w:"hand", m:"手渡す", p:"verb", category:"general", c:"hand out flyers"},
+{w:"awning", m:"日よけ", p:"noun", category:"general", c:"under the awning"},
+{w:"canopy", m:"天蓋・ひさし", p:"noun", category:"general", c:"a fabric canopy"},
+{w:"scaffolding", m:"足場", p:"noun", category:"general", c:"erect scaffolding"},
+{w:"ladder", m:"はしご", p:"noun", category:"general", c:"climb a ladder"},
+{w:"wheelbarrow", m:"手押し車", p:"noun", category:"general", c:"push a wheelbarrow"},
+{w:"brick", m:"レンガ", p:"noun", category:"general", c:"brick wall"},
+{w:"pavement", m:"舗装道路", p:"noun", category:"general", c:"walk on the pavement"},
+{w:"intersection", m:"交差点", p:"noun", category:"general", c:"at the intersection"},
+{w:"crosswalk", m:"横断歩道", p:"noun", category:"general", c:"use the crosswalk"},
+{w:"pedestrian", m:"歩行者", p:"noun", category:"general", c:"pedestrian crossing"},
+{w:"curb", m:"縁石", p:"noun", category:"general", c:"step off the curb"},
+{w:"driveway", m:"私道", p:"noun", category:"general", c:"park in the driveway"},
+{w:"vehicle", m:"乗り物", p:"noun", category:"general", c:"motor vehicle"},
+{w:"luggage", m:"手荷物", p:"noun", category:"general", c:"carry luggage"},
+{w:"baggage", m:"手荷物", p:"noun", category:"general", c:"baggage claim"},
+{w:"suitcase", m:"スーツケース", p:"noun", category:"general", c:"pack a suitcase"},
+{w:"briefcase", m:"書類かばん", p:"noun", category:"general", c:"leather briefcase"},
+{w:"backpack", m:"リュックサック", p:"noun", category:"general", c:"wear a backpack"},
+{w:"drawer", m:"引き出し", p:"noun", category:"general", c:"top drawer"},
+{w:"cabinet", m:"キャビネット", p:"noun", category:"general", c:"filing cabinet"},
+{w:"shelf", m:"棚", p:"noun", category:"general", c:"on the shelf"},
+{w:"rack", m:"ラック", p:"noun", category:"general", c:"clothing rack"},
+{w:"counter", m:"カウンター", p:"noun", category:"general", c:"at the counter"},
+{w:"merchandise", m:"商品", p:"noun", category:"general", c:"display merchandise"},
+{w:"goods", m:"品物", p:"noun", category:"general", c:"sporting goods"},
+{w:"produce", m:"農産物", p:"noun", category:"general", c:"fresh produce"},
+{w:"crop", m:"作物", p:"noun", category:"general", c:"harvest a crop"},
+{w:"harvest", m:"収穫", p:"noun", category:"general", c:"good harvest"},
+{w:"ingredient", m:"材料", p:"noun", category:"general", c:"fresh ingredients"},
+{w:"recipe", m:"レシピ", p:"noun", category:"general", c:"follow a recipe"},
+{w:"utensil", m:"調理器具", p:"noun", category:"general", c:"kitchen utensils"},
+{w:"pot", m:"鍋・鉢", p:"noun", category:"general", c:"flower pot"},
+{w:"pan", m:"平鍋", p:"noun", category:"general", c:"frying pan"},
+{w:"tray", m:"お盆", p:"noun", category:"general", c:"serve on a tray"},
+{w:"vase", m:"花瓶", p:"noun", category:"general", c:"put flowers in a vase"},
+{w:"bouquet", m:"花束", p:"noun", category:"general", c:"bridal bouquet"},
+{w:"path", m:"小道", p:"noun", category:"general", c:"walk along the path"},
+{w:"trail", m:"山道", p:"noun", category:"general", c:"hiking trail"},
+{w:"fence", m:"フェンス", p:"noun", category:"general", c:"wooden fence"},
+{w:"gate", m:"門", p:"noun", category:"general", c:"front gate"},
+{w:"archway", m:"アーチ道", p:"noun", category:"general", c:"stone archway"},
+{w:"pillar", m:"柱", p:"noun", category:"general", c:"concrete pillar"},
+{w:"column", m:"円柱", p:"noun", category:"general", c:"marble column"},
+{w:"stairway", m:"階段", p:"noun", category:"general", c:"climb the stairway"},
+{w:"railing", m:"手すり", p:"noun", category:"general", c:"hold the railing"},
+{w:"escalator", m:"エスカレーター", p:"noun", category:"general", c:"take the escalator"},
+{w:"fountain", m:"噴水", p:"noun", category:"general", c:"water fountain"},
+{w:"statue", m:"彫像", p:"noun", category:"general", c:"bronze statue"},
+{w:"monument", m:"記念碑", p:"noun", category:"general", c:"historical monument"},
+{w:"lawn", m:"芝生", p:"noun", category:"general", c:"mow the lawn"},
+{w:"vendor", m:"行商人・露店", p:"noun", category:"general", c:"street vendor"},
+{w:"caterer", m:"仕出し業者", p:"noun", category:"general", c:"hire a caterer"},
+{w:"tenant", m:"賃借人", p:"noun", category:"general", c:"new tenant"},
+{w:"landlord", m:"家主", p:"noun", category:"general", c:"contact the landlord"}
+{w:"cover", m:"報道する・まかなう・扱う", p:"verb", category:"general", c:"cover the event"},
 {w:"meet", m:"（要求などを）満たす", p:"verb", category:"general", c:"meet the requirements"},
 {w:"observe", m:"遵守する・気づく", p:"verb", category:"general", c:"observe the safety rules"},
 {w:"process", m:"処理する・過程", p:"verb", category:"general", c:"process an order"},
@@ -916,114 +1142,6 @@
 {w:"thoroughly", m:"徹底的に", p:"adv", category:"general", c:"read thoroughly"},
 {w:"unanimously", m:"満場一致で", p:"adv", category:"general", c:"voted unanimously"},
 {w:"undoubtedly", m:"間違いなく", p:"adv", category:"general", c:"undoubtedly the best"}
-{w:"pile", m:"積み上げる", p:"verb", category:"general", c:"pile up the documents"},
-{w:"scatter", m:"散らばる", p:"verb", category:"general", c:"papers are scattered"},
-{w:"fold", m:"折りたたむ", p:"verb", category:"general", c:"fold a map"},
-{w:"sweep", m:"掃く", p:"verb", category:"general", c:"sweep the floor"},
-{w:"mop", m:"モップで拭く", p:"verb", category:"general", c:"mop the hallway"},
-{w:"wipe", m:"拭く", p:"verb", category:"general", c:"wipe the table"},
-{w:"adjust", m:"調整する", p:"verb", category:"general", c:"adjust the equipment"},
-{w:"admire", m:"眺める・感嘆する", p:"verb", category:"general", c:"admire a painting"},
-{w:"gaze", m:"見つめる", p:"verb", category:"general", c:"gaze out the window"},
-{w:"stare", m:"じっと見る", p:"verb", category:"general", c:"stare at the screen"},
-{w:"examine", m:"調べる", p:"verb", category:"general", c:"examine a document"},
-{w:"assemble", m:"組み立てる", p:"verb", category:"general", c:"assemble parts"},
-{w:"dismantle", m:"分解する", p:"verb", category:"general", c:"dismantle a machine"},
-{w:"load", m:"積み込む", p:"verb", category:"general", c:"load cargo"},
-{w:"unload", m:"降ろす", p:"verb", category:"general", c:"unload a truck"},
-{w:"pave", m:"舗装する", p:"verb", category:"general", c:"pave a road"},
-{w:"trim", m:"刈り込む", p:"verb", category:"general", c:"trim the bushes"},
-{w:"mow", m:"芝を刈る", p:"verb", category:"general", c:"mow the lawn"},
-{w:"water", m:"水をやる", p:"verb", category:"general", c:"water the plants"},
-{w:"plant", m:"植える", p:"verb", category:"general", c:"plant a tree"},
-{w:"pour", m:"注ぐ", p:"verb", category:"general", c:"pour water"},
-{w:"stir", m:"かき混ぜる", p:"verb", category:"general", c:"stir the soup"},
-{w:"slice", m:"薄く切る", p:"verb", category:"general", c:"slice the bread"},
-{w:"weigh", m:"重さを量る", p:"verb", category:"general", c:"weigh a package"},
-{w:"board", m:"乗り込む", p:"verb", category:"general", c:"board a train"},
-{w:"disembark", m:"降りる", p:"verb", category:"general", c:"disembark from a ship"},
-{w:"stroll", m:"ぶらぶら歩く", p:"verb", category:"general", c:"stroll in the park"},
-{w:"browse", m:"見て回る", p:"verb", category:"general", c:"browse the store"},
-{w:"display", m:"展示する", p:"verb", category:"general", c:"display items"},
-{w:"reflect", m:"反射する", p:"verb", category:"general", c:"reflect light"},
-{w:"stretch", m:"伸ばす", p:"verb", category:"general", c:"stretch arms"},
-{w:"tie", m:"結ぶ", p:"verb", category:"general", c:"tie a knot"},
-{w:"unfasten", m:"外す", p:"verb", category:"general", c:"unfasten a seatbelt"},
-{w:"suspend", m:"吊るす", p:"verb", category:"general", c:"suspend a light"},
-{w:"mount", m:"据え付ける", p:"verb", category:"general", c:"mount a TV"},
-{w:"plug", m:"プラグを差し込む", p:"verb", category:"general", c:"plug in a cord"},
-{w:"unplug", m:"プラグを抜く", p:"verb", category:"general", c:"unplug a device"},
-{w:"secure", m:"固定する", p:"verb", category:"general", c:"secure a boat"},
-{w:"dock", m:"停泊させる", p:"verb", category:"general", c:"dock a ship"},
-{w:"float", m:"浮かぶ", p:"verb", category:"general", c:"float on the water"},
-{w:"ascend", m:"上がる", p:"verb", category:"general", c:"ascend the stairs"},
-{w:"descend", m:"下りる", p:"verb", category:"general", c:"descend the stairs"},
-{w:"hand", m:"手渡す", p:"verb", category:"general", c:"hand out flyers"},
-{w:"awning", m:"日よけ", p:"noun", category:"general", c:"under the awning"},
-{w:"canopy", m:"天蓋・ひさし", p:"noun", category:"general", c:"a fabric canopy"},
-{w:"scaffolding", m:"足場", p:"noun", category:"general", c:"erect scaffolding"},
-{w:"ladder", m:"はしご", p:"noun", category:"general", c:"climb a ladder"},
-{w:"wheelbarrow", m:"手押し車", p:"noun", category:"general", c:"push a wheelbarrow"},
-{w:"brick", m:"レンガ", p:"noun", category:"general", c:"brick wall"},
-{w:"pavement", m:"舗装道路", p:"noun", category:"general", c:"walk on the pavement"},
-{w:"intersection", m:"交差点", p:"noun", category:"general", c:"at the intersection"},
-{w:"crosswalk", m:"横断歩道", p:"noun", category:"general", c:"use the crosswalk"},
-{w:"pedestrian", m:"歩行者", p:"noun", category:"general", c:"pedestrian crossing"},
-{w:"curb", m:"縁石", p:"noun", category:"general", c:"step off the curb"},
-{w:"driveway", m:"私道", p:"noun", category:"general", c:"park in the driveway"},
-{w:"vehicle", m:"乗り物", p:"noun", category:"general", c:"motor vehicle"},
-{w:"luggage", m:"手荷物", p:"noun", category:"general", c:"carry luggage"},
-{w:"baggage", m:"手荷物", p:"noun", category:"general", c:"baggage claim"},
-{w:"suitcase", m:"スーツケース", p:"noun", category:"general", c:"pack a suitcase"},
-{w:"briefcase", m:"書類かばん", p:"noun", category:"general", c:"leather briefcase"},
-{w:"backpack", m:"リュックサック", p:"noun", category:"general", c:"wear a backpack"},
-{w:"drawer", m:"引き出し", p:"noun", category:"general", c:"top drawer"},
-{w:"cabinet", m:"キャビネット", p:"noun", category:"general", c:"filing cabinet"},
-{w:"shelf", m:"棚", p:"noun", category:"general", c:"on the shelf"},
-{w:"rack", m:"ラック", p:"noun", category:"general", c:"clothing rack"},
-{w:"counter", m:"カウンター", p:"noun", category:"general", c:"at the counter"},
-{w:"merchandise", m:"商品", p:"noun", category:"general", c:"display merchandise"},
-{w:"goods", m:"品物", p:"noun", category:"general", c:"sporting goods"},
-{w:"produce", m:"農産物", p:"noun", category:"general", c:"fresh produce"},
-{w:"crop", m:"作物", p:"noun", category:"general", c:"harvest a crop"},
-{w:"harvest", m:"収穫", p:"noun", category:"general", c:"good harvest"},
-{w:"ingredient", m:"材料", p:"noun", category:"general", c:"fresh ingredients"},
-{w:"recipe", m:"レシピ", p:"noun", category:"general", c:"follow a recipe"},
-{w:"utensil", m:"調理器具", p:"noun", category:"general", c:"kitchen utensils"},
-{w:"pot", m:"鍋・鉢", p:"noun", category:"general", c:"flower pot"},
-{w:"pan", m:"平鍋", p:"noun", category:"general", c:"frying pan"},
-{w:"tray", m:"お盆", p:"noun", category:"general", c:"serve on a tray"},
-{w:"vase", m:"花瓶", p:"noun", category:"general", c:"put flowers in a vase"},
-{w:"bouquet", m:"花束", p:"noun", category:"general", c:"bridal bouquet"},
-{w:"path", m:"小道", p:"noun", category:"general", c:"walk along the path"},
-{w:"trail", m:"山道", p:"noun", category:"general", c:"hiking trail"},
-{w:"fence", m:"フェンス", p:"noun", category:"general", c:"wooden fence"},
-{w:"gate", m:"門", p:"noun", category:"general", c:"front gate"},
-{w:"archway", m:"アーチ道", p:"noun", category:"general", c:"stone archway"},
-{w:"pillar", m:"柱", p:"noun", category:"general", c:"concrete pillar"},
-{w:"column", m:"円柱", p:"noun", category:"general", c:"marble column"},
-{w:"stairway", m:"階段", p:"noun", category:"general", c:"climb the stairway"},
-{w:"railing", m:"手すり", p:"noun", category:"general", c:"hold the railing"},
-{w:"escalator", m:"エスカレーター", p:"noun", category:"general", c:"take the escalator"},
-{w:"fountain", m:"噴水", p:"noun", category:"general", c:"water fountain"},
-{w:"statue", m:"彫像", p:"noun", category:"general", c:"bronze statue"},
-{w:"monument", m:"記念碑", p:"noun", category:"general", c:"historical monument"},
-{w:"lawn", m:"芝生", p:"noun", category:"general", c:"mow the lawn"},
-{w:"vendor", m:"行商人・露店", p:"noun", category:"general", c:"street vendor"},
-{w:"caterer", m:"仕出し業者", p:"noun", category:"general", c:"hire a caterer"},
-{w:"tenant", m:"賃借人", p:"noun", category:"general", c:"new tenant"},
-{w:"landlord", m:"家主", p:"noun", category:"general", c:"contact the landlord"}
-// 接続詞・副詞 (adv_conj) - Part5超重要
-{w:"nevertheless", m:"それにもかかわらず", p:"adv", category:"adv_conj", c:""},
-{w:"whereas", m:"〜であるのに対して", p:"conj", category:"adv_conj", c:""},
-{w:"consequently", m:"その結果として", p:"adv", category:"adv_conj", c:""},
-{w:"therefore", m:"それゆえに", p:"adv", category:"adv_conj", c:""},
-{w:"although", m:"〜だけれども", p:"conj", category:"adv_conj", c:""},
-{w:"unless", m:"〜しない限り", p:"conj", category:"adv_conj", c:""},
-{w:"provided that", m:"〜という条件で", p:"conj", category:"adv_conj", c:""},
-{w:"meanwhile", m:"その間に", p:"adv", category:"adv_conj", c:""},
-{w:"furthermore", m:"さらに", p:"adv", category:"adv_conj", c:""},
-{w:"otherwise", m:"さもなければ", p:"adv", category:"adv_conj", c:""},
 {w:"despite", m:"〜にもかかわらず（前置詞）", p:"prep", category:"adv_conj", c:"despite the rain"},
 {w:"in spite of", m:"〜にもかかわらず（前置詞）", p:"prep", category:"adv_conj", c:"in spite of the rain"},
 {w:"although", m:"〜だけれども（接続詞）", p:"conj", category:"adv_conj", c:"although it was raining"},
@@ -1074,132 +1192,29 @@
 {w:"as far as", m:"〜する限りでは・範囲（接続詞）", p:"conj", category:"adv_conj", c:"as far as I know"},
 {w:"once", m:"いったん〜すると（接続詞）", p:"conj", category:"adv_conj", c:"once you start"},
 {w:"whenever", m:"〜する時はいつでも（接続詞）", p:"conj", category:"adv_conj", c:"whenever you want"}
-
-            // イディオム (idiom)
-    {w:"take over", m:"〜を引き継ぐ・買収する", p:"idiom", category:"idiom", c:"take over the business"},
-{w:"set up", m:"〜を設置する・準備する", p:"idiom", category:"idiom", c:"set up a meeting"},
-{w:"carry out", m:"〜を実行する", p:"idiom", category:"idiom", c:"carry out a survey"},
-{w:"put off", m:"〜を延期する", p:"idiom", category:"idiom", c:"put off the decision"},
-{w:"call off", m:"〜を中止する", p:"idiom", category:"idiom", c:"call off the event"},
-{w:"go over", m:"〜を詳しく見直す", p:"idiom", category:"idiom", c:"go over the report"},
-{w:"hand in", m:"〜を提出する", p:"idiom", category:"idiom", c:"hand in the assignment"},
-{w:"fill out", m:"〜に記入する", p:"idiom", category:"idiom", c:"fill out the form"},
-{w:"look into", m:"〜を調査する", p:"idiom", category:"idiom", c:"look into the matter"},
-{w:"bring up", m:"〜を持ち出す・育てる", p:"idiom", category:"idiom", c:"bring up a new topic"},
-{w:"turn down", m:"〜を断る・音量を下げる", p:"idiom", category:"idiom", c:"turn down the offer"},
-{w:"work out", m:"〜を解決する・運動する", p:"idiom", category:"idiom", c:"work out a solution"},
-{w:"come up with", m:"〜を思いつく", p:"idiom", category:"idiom", c:"come up with an idea"},
-{w:"cut down on", m:"〜を削減する", p:"idiom", category:"idiom", c:"cut down on expenses"},
-{w:"keep up with", m:"〜に遅れずについていく", p:"idiom", category:"idiom", c:"keep up with the news"},
-{w:"get along with", m:"〜と仲良くやっていく", p:"idiom", category:"idiom", c:"get along with colleagues"},
-{w:"make up for", m:"〜を埋め合わせる", p:"idiom", category:"idiom", c:"make up for the loss"},
-{w:"look forward to", m:"〜を楽しみに待つ", p:"idiom", category:"idiom", c:"look forward to the trip"},
-{w:"run out of", m:"〜を使い果たす", p:"idiom", category:"idiom", c:"run out of ink"},
-{w:"be subject to", m:"〜の影響を受けやすい・〜を条件とする", p:"idiom", category:"idiom", c:"subject to change"},
-{w:"prior to", m:"〜より前に", p:"idiom", category:"idiom", c:"prior to the departure"},
-{w:"in terms of", m:"〜の点から", p:"idiom", category:"idiom", c:"in terms of quality"},
-{w:"on behalf of", m:"〜を代表して", p:"idiom", category:"idiom", c:"on behalf of the staff"},
-{w:"due to", m:"〜のせいで", p:"idiom", category:"idiom", c:"due to heavy rain"},
-{w:"regardless of", m:"〜に関わらず", p:"idiom", category:"idiom", c:"regardless of the cost"},
-{w:"in charge of", m:"〜の担当で", p:"idiom", category:"idiom", c:"in charge of sales"},
-{w:"account for", m:"〜の割合を占める・説明する", p:"idiom", category:"idiom", c:"account for 30%"},
-{w:"as for", m:"〜に関しては", p:"idiom", category:"idiom", c:"as for the price"},
-{w:"back up", m:"〜を支持する・バックアップをとる", p:"idiom", category:"idiom", c:"back up the data"},
-{w:"break down", m:"故障する・分析する", p:"idiom", category:"idiom", c:"the machine broke down"},
-{w:"bring about", m:"〜を引き起こす", p:"idiom", category:"idiom", c:"bring about change"},
-{w:"check out", m:"〜を調べる・チェックアウトする", p:"idiom", category:"idiom", c:"check out the website"},
-{w:"deal with", m:"〜を扱う・対処する", p:"idiom", category:"idiom", c:"deal with customers"},
-{w:"end up", m:"結局〜になる", p:"idiom", category:"idiom", c:"end up losing money"},
-{w:"figure out", m:"〜を理解する・解決する", p:"idiom", category:"idiom", c:"figure out the problem"},
-{w:"focus on", m:"〜に集中する", p:"idiom", category:"idiom", c:"focus on core business"},
-{w:"get back to", m:"〜に折り返し連絡する", p:"idiom", category:"idiom", c:"get back to you later"},
-{w:"give up", m:"〜を諦める", p:"idiom", category:"idiom", c:"don't give up"},
-{w:"go ahead", m:"先に進める", p:"idiom", category:"idiom", c:"go ahead with the plan"},
-{w:"hold on", m:"（電話で）待つ・持ちこたえる", p:"idiom", category:"idiom", c:"hold on a moment"},
-{w:"keep on", m:"〜し続ける", p:"idiom", category:"idiom", c:"keep on trying"},
-{w:"lay off", m:"〜を解雇する", p:"idiom", category:"idiom", c:"be laid off"},
-{w:"lead to", m:"〜につながる・引き起こす", p:"idiom", category:"idiom", c:"lead to success"},
-{w:"leave out", m:"〜を省く・除外する", p:"idiom", category:"idiom", c:"leave out the details"},
-{w:"look after", m:"〜の世話をする", p:"idiom", category:"idiom", c:"look after the guests"},
-{w:"look for", m:"〜を探す", p:"idiom", category:"idiom", c:"look for a job"},
-{w:"make sure", m:"〜を確かめる", p:"idiom", category:"idiom", c:"make sure to call"},
-{w:"pass out", m:"〜を配る・気絶する", p:"idiom", category:"idiom", c:"pass out brochures"},
-{w:"point out", m:"〜を指摘する", p:"idiom", category:"idiom", c:"point out a mistake"},
-{w:"put through", m:"（電話を）つなぐ", p:"idiom", category:"idiom", c:"put you through to him"},
-{w:"rely on", m:"〜に頼る", p:"idiom", category:"idiom", c:"rely on the data"},
-{w:"set forth", m:"〜を提示する・説明する", p:"idiom", category:"idiom", c:"set forth the terms"},
-{w:"show up", m:"現れる", p:"idiom", category:"idiom", c:"show up on time"},
-{w:"sign up for", m:"〜に登録する・申し込む", p:"idiom", category:"idiom", c:"sign up for the course"},
-{w:"sort out", m:"〜を整理する・解決する", p:"idiom", category:"idiom", c:"sort out the issue"},
-{w:"stand for", m:"〜を表す・象徴する", p:"idiom", category:"idiom", c:"what it stands for"},
-{w:"take apart", m:"〜を分解する", p:"idiom", category:"idiom", c:"take the machine apart"},
-{w:"take place", m:"（行事などが）行われる", p:"idiom", category:"idiom", c:"take place in Tokyo"},
-{w:"talk over", m:"〜について話し合う", p:"idiom", category:"idiom", c:"talk over the plan"},
-{w:"think over", m:"〜をじっくり考える", p:"idiom", category:"idiom", c:"think over the offer"},
-{w:"try out", m:"〜を試す", p:"idiom", category:"idiom", c:"try out new software"},
-{w:"turn out", m:"（結局）〜であることがわかる", p:"idiom", category:"idiom", c:"turn out to be true"},
-{w:"use up", m:"〜を使い果たす", p:"idiom", category:"idiom", c:"use up all the paper"},
-{w:"watch out", m:"〜に気をつける", p:"idiom", category:"idiom", c:"watch out for errors"},
-{w:"write down", m:"〜を書き留める", p:"idiom", category:"idiom", c:"write down the address"},
-{w:"at all times", m:"常に", p:"idiom", category:"idiom", c:"available at all times"},
-{w:"by means of", m:"〜によって", p:"idiom", category:"idiom", c:"by means of transport"},
-{w:"for the time being", m:"当面の間", p:"idiom", category:"idiom", c:"valid for the time being"},
-{w:"in advance", m:"あらかじめ・事前に", p:"idiom", category:"idiom", c:"book in advance"},
-{w:"in light of", m:"〜を考慮して", p:"idiom", category:"idiom", c:"in light of the results"},
-{w:"in person", m:"直接会って", p:"idiom", category:"idiom", c:"visit in person"},
-{w:"on purpose", m:"わざと・意図的に", p:"idiom", category:"idiom", c:"done on purpose"},
-{w:"out of order", m:"故障して", p:"idiom", category:"idiom", c:"the elevator is out of order"},
-{w:"up to date", m:"最新の", p:"idiom", category:"idiom", c:"up-to-date information"},
-{w:"with respect to", m:"〜に関して", p:"idiom", category:"idiom", c:"with respect to the law"},
-{w:"ahead of schedule", m:"予定より早く", p:"idiom", category:"idiom", c:"finished ahead of schedule"},
-{w:"as a result of", m:"〜の結果として", p:"idiom", category:"idiom", c:"as a result of the merger"},
-{w:"at any rate", m:"いずれにせよ", p:"idiom", category:"idiom", c:"at any rate, try it"},
-{w:"by accident", m:"偶然に", p:"idiom", category:"idiom", c:"met him by accident"},
-{w:"in common", m:"共通して", p:"idiom", category:"idiom", c:"have much in common"},
-{w:"in detail", m:"詳細に", p:"idiom", category:"idiom", c:"explain in detail"},
-{w:"in general", m:"一般的に", p:"idiom", category:"idiom", c:"in general terms"},
-{w:"in haste", m:"急いで", p:"idiom", category:"idiom", c:"left in haste"},
-{w:"in particular", m:"特に", p:"idiom", category:"idiom", c:"nothing in particular"},
-{w:"in short", m:"要するに", p:"idiom", category:"idiom", c:"in short, it failed"},
-{w:"on schedule", m:"予定通りに", p:"idiom", category:"idiom", c:"depart on schedule"},
-{w:"out of date", m:"時代遅れの", p:"idiom", category:"idiom", c:"out-of-date records"},
-{w:"under control", m:"管理されて・制御されて", p:"idiom", category:"idiom", c:"everything is under control"},
-{w:"without fail", m:"必ず", p:"idiom", category:"idiom", c:"submit without fail"},
-{w:"by all means", m:"ぜひとも・どうぞ", p:"idiom", category:"idiom", c:"By all means, come."},
-{w:"in no time", m:"すぐに", p:"idiom", category:"idiom", c:"finished in no time"},
-{w:"all in all", m:"概して・全体的に見て", p:"idiom", category:"idiom", c:"All in all, it was good."},
-{w:"catch up with", m:"〜に追いつく", p:"idiom", category:"idiom", c:"catch up with the leaders"},
-{w:"cope with", m:"〜に対処する", p:"idiom", category:"idiom", c:"cope with the workload"},
-{w:"depend on", m:"〜に依存する・〜次第だ", p:"idiom", category:"idiom", c:"it depends on you"},
-{w:"draw up", m:"（文書を）作成する", p:"idiom", category:"idiom", c:"draw up a contract"},
-{w:"keep an eye on", m:"〜から目を離さない", p:"idiom", category:"idiom", c:"keep an eye on the child"},
-{w:"look up to", m:"〜を尊敬する", p:"idiom", category:"idiom", c:"look up to his boss"},
-{w:"put up with", m:"〜を我慢する", p:"idiom", category:"idiom", c:"put up with the noise"},
-{w:"take into account", m:"〜を考慮に入れる", p:"idiom", category:"idiom", c:"take costs into account"},
         ];
 
-        let savedData = JSON.parse(localStorage.getItem('t750_user_data'));
-        let userDb =[];
-        if (!savedData || savedData.length === 0) {
+        let userDb = JSON.parse(localStorage.getItem('t750_user_data')) || [];
+        if (userDb.length === 0) {
             userDb = MASTER_VOCAB.map((item, i) => ({ ...item, id: "m_" + i, level: 0, interval: 1, nextDate: 0, missCount: 0 }));
             localStorage.setItem('t750_user_data', JSON.stringify(userDb));
-        } else {
-            userDb = savedData.map(w => w.category ? w : { ...w, category: 'general' });
         }
 
         let currentCategory = 'general';
-        let sessionWords =[], currentIndex = 0, startTime = 0, isAnswerMode = false, currentFlick = "", learningMode = "attack", sessionResults = { perfect: 0, good: 0, retry: 0, missed:[] }, timerInterval;
+        let sessionWords = [], currentIndex = 0, startTime = 0, isAnswerMode = false, currentFlick = "", learningMode = "attack", sessionResults = { perfect: 0, good: 0, retry: 0, missed:[] }, timerInterval;
         
         const POS_COLORS = { noun: 'bg-noun', verb: 'bg-verb', adj: 'bg-adj', adv: 'bg-adv', conj: 'bg-conj', idiom: 'bg-idiom' };
         const POS_JA = { noun: '【名詞】', verb: '【動詞】', adj: '【形容詞】', adv: '【副詞】', conj: '【接続詞】', idiom: '【熟語・慣用句】' };
 
-        window.onload = () => { refreshHomeUI(); lucide.createIcons(); };
+        window.onload = () => { refreshHomeUI(); lucide.createIcons(); initDrag(); };
+
         function saveProgress() { localStorage.setItem('t750_user_data', JSON.stringify(userDb)); }
 
         function setCategory(cat) {
             currentCategory = cat;
-            ['general', 'adv_conj', 'idiom'].forEach(c => {
-                document.getElementById('cat-' + c).className = (c === cat) ? "px-5 py-2.5 rounded-full font-black text-[11px] bg-white text-black shrink-0 transition-all uppercase tracking-widest shadow-lg" : "px-5 py-2.5 rounded-full font-black text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0 transition-all uppercase tracking-widest";
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                const isActive = btn.id === 'cat-' + cat;
+                btn.className = `category-btn px-5 py-2.5 rounded-full font-bold text-[11px] shrink-0 transition-all uppercase tracking-widest ${isActive ? 'bg-white text-black shadow-lg' : 'bg-zinc-800 text-zinc-400 border border-zinc-700'}`;
             });
             refreshHomeUI();
         }
@@ -1217,91 +1232,121 @@
             const weakCount = catWords.filter(w => w.missCount > 0).length;
             const flameBtn = document.getElementById('flame-btn');
             if (weakCount > 0) {
-                flameBtn.disabled = false; flameBtn.className = "w-full bg-orange-600 text-white font-black py-4 rounded-3xl text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform";
+                flameBtn.disabled = false;
+                flameBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                flameBtn.classList.add('bg-orange-600', 'text-white', 'shadow-lg');
             } else {
-                flameBtn.disabled = true; flameBtn.className = "w-full bg-orange-600/10 text-orange-500 font-black py-4 rounded-3xl text-sm flex items-center justify-center gap-2 opacity-50 cursor-not-allowed border border-orange-500/20";
+                flameBtn.disabled = true;
+                flameBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                flameBtn.classList.remove('bg-orange-600', 'text-white', 'shadow-lg');
             }
         }
 
-        function openAddWordModal() { document.getElementById('new-word-category').value = currentCategory; document.getElementById('add-word-modal').classList.remove('hidden'); document.getElementById('import-log').innerText=""; }
+        function openAddWordModal() { 
+            document.getElementById('new-word-category').value = currentCategory; 
+            document.getElementById('add-word-modal').classList.remove('hidden'); 
+            refreshWordListView();
+        }
         function closeAddWordModal() { document.getElementById('add-word-modal').classList.add('hidden'); }
-        
+        function confirmQuit() { document.getElementById('confirm-modal').classList.remove('hidden'); }
+        function closeConfirm() { document.getElementById('confirm-modal').classList.add('hidden'); }
+
+        function refreshWordListView() {
+            const listEl = document.getElementById('full-word-list');
+            const countEl = document.getElementById('db-total-count');
+            listEl.innerHTML = "";
+            const sortedWords = [...userDb].reverse();
+            countEl.innerText = `${userDb.length} Items`;
+
+            sortedWords.forEach(word => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-black/40 p-3 rounded-xl border border-zinc-800 group";
+                item.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-white truncate">${word.w}</span>
+                            <span class="text-[8px] px-1.5 py-0.5 rounded ${POS_COLORS[word.p] || 'bg-zinc-700'} text-white/90 font-bold uppercase">${word.p}</span>
+                        </div>
+                        <div class="text-[10px] text-zinc-500 font-bold truncate">${word.m}</div>
+                    </div>
+                    <button onclick="deleteWord('${word.id}')" class="p-2 text-zinc-700 hover:text-red-500 transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                listEl.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function deleteWord(id) {
+            userDb = userDb.filter(w => w.id !== id);
+            saveProgress();
+            refreshWordListView();
+            refreshHomeUI();
+        }
+
         function saveNewWord() {
             const cat = document.getElementById('new-word-category').value;
             const eng = document.getElementById('new-word-eng').value.trim();
             const jpn = document.getElementById('new-word-jpn').value.trim();
             const pos = document.getElementById('new-word-pos').value;
-            if(!eng || !jpn) return alert("英単語と意味は必須です");
+            if(!eng || !jpn) return;
             userDb.push({ id: "u_" + Date.now(), category: cat, w: eng, m: jpn, p: pos, c: "", level: 0, interval: 1, nextDate: 0, missCount: 0 });
-            saveProgress(); setCategory(cat); document.getElementById('new-word-eng').value = ""; document.getElementById('new-word-jpn').value = "";
-            alert("追加しました！");
-        }
-
-        // CSVインポート機能（重複チェック付き）
-        function importCSV() {
-            const csvText = document.getElementById('csv-input').value.trim();
-            if(!csvText) return;
-            const lines = csvText.split('\n');
-            let addCount = 0;
-            let skipCount = 0;
-
-            lines.forEach(line => {
-                const cols = line.split(',');
-                if(cols.length >= 4) {
-                    const eng = cols[0].trim();
-                    const jpn = cols[1].trim();
-                    const pos = cols[2].trim();
-                    const cat = cols[3].trim();
-                    const ex = cols[4] ? cols[4].trim() : "";
-
-                    // 【重複チェック】すでに同じ英単語(w)が存在するか確認
-                    const isDuplicate = userDb.some(item => item.w.toLowerCase() === eng.toLowerCase());
-
-                    if(eng && jpn && !isDuplicate) {
-                        userDb.push({ id: "u_" + Date.now() + Math.random(), category: cat, w: eng, m: jpn, p: pos, c: ex, level: 0, interval: 1, nextDate: 0, missCount: 0 });
-                        addCount++;
-                    } else if (isDuplicate) {
-                        skipCount++;
-                    }
-                }
-            });
-
-            if(addCount > 0 || skipCount > 0) {
-                saveProgress();
-                refreshHomeUI();
-                document.getElementById('csv-input').value = "";
-                document.getElementById('import-log').innerText = `${addCount}件追加、${skipCount}件スキップしました`;
-                document.getElementById('import-log').className = "text-[10px] text-green-400 mt-2 text-center font-bold";
-            } else {
-                document.getElementById('import-log').innerText = "有効なデータが見つかりませんでした";
-                document.getElementById('import-log').className = "text-[10px] text-red-400 mt-2 text-center font-bold";
-            }
+            saveProgress(); 
+            refreshWordListView();
+            refreshHomeUI();
+            document.getElementById('new-word-eng').value = ""; 
+            document.getElementById('new-word-jpn').value = "";
         }
 
         function setMode(mode) {
-            learningMode = mode;['attack', 'balance', 'review'].forEach(m => {
-                document.getElementById('mode-' + m).className = (m === mode) ? "flex-1 py-3 rounded-xl font-black text-xs transition-all bg-white text-black" : "flex-1 py-3 rounded-xl font-black text-xs transition-all text-zinc-500";
+            learningMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                const isActive = btn.id === 'mode-' + mode;
+                btn.className = `mode-btn flex-1 py-3 rounded-xl font-bold text-xs transition-all ${isActive ? 'bg-white text-black' : 'text-zinc-500'}`;
             });
         }
 
         function startSession(isWeakOnly = false) {
-            const size = parseInt(document.getElementById('count-setting').value);
+            const sizeSetting = parseInt(document.getElementById('count-setting').value);
             const now = Date.now();
             const catWords = userDb.filter(w => w.category === currentCategory);
+            const targetSize = Math.min(sizeSetting, catWords.length);
             
-            if (isWeakOnly) { sessionWords = catWords.filter(w => w.missCount > 0).sort((a, b) => b.missCount - a.missCount).slice(0, size); }
-            else {
+            if (isWeakOnly) { 
+                sessionWords = catWords.filter(w => w.missCount > 0).sort((a, b) => b.missCount - a.missCount).slice(0, targetSize); 
+            } else {
                 const ratios = { attack:[0.5, 0.4, 0.1], balance:[0.3, 0.6, 0.1], review:[0, 0.8, 0.2] }[learningMode];
                 let poolNew = catWords.filter(w => w.level === 0).sort(() => Math.random() - 0.5);
                 let poolReview = catWords.filter(w => w.level > 0 && w.nextDate <= now).sort((a, b) => a.nextDate - b.nextDate);
                 let poolWeak = catWords.filter(w => w.missCount > 3).sort(() => Math.random() - 0.5);
-                let selected =[...poolNew.slice(0, Math.floor(size * ratios[0])), ...poolWeak.slice(0, Math.floor(size * ratios[2])), ...poolReview.slice(0, size - Math.floor(size * ratios[0]) - Math.floor(size * ratios[2]))];
-                if (selected.length < size) selected.push(...catWords.filter(w => !selected.includes(w)).sort(() => Math.random() - 0.5).slice(0, size - selected.length));
+                
+                let selected = [];
+                const addFromPool = (pool, count) => {
+                    let added = 0;
+                    for (let w of pool) {
+                        if (added >= count || selected.length >= targetSize) break;
+                        if (!selected.find(s => s.id === w.id)) { selected.push(w); added++; }
+                    }
+                };
+
+                addFromPool(poolNew, Math.floor(targetSize * ratios[0]));
+                addFromPool(poolWeak, Math.floor(targetSize * ratios[2]));
+                addFromPool(poolReview, targetSize - selected.length);
+
+                if (selected.length < targetSize) {
+                    let remaining = catWords.filter(w => !selected.find(s => s.id === w.id)).sort(() => Math.random() - 0.5);
+                    for (let w of remaining) {
+                        if (selected.length >= targetSize) break;
+                        selected.push(w);
+                    }
+                }
                 sessionWords = selected.sort(() => Math.random() - 0.5);
             }
-            if (sessionWords.length === 0) return alert("単語がありません。データベースから追加してください。");
+            if (sessionWords.length === 0) return;
             currentIndex = 0; sessionResults = { perfect: 0, good: 0, retry: 0, missed:[] };
-            document.getElementById('home-screen').classList.add('hidden'); document.getElementById('learning-screen').classList.remove('hidden');
+            document.getElementById('home-screen').classList.add('hidden'); 
+            document.getElementById('learning-screen').classList.remove('hidden');
             renderWord();
         }
 
@@ -1312,29 +1357,25 @@
             document.getElementById('answer-section').classList.add('hidden');
             document.getElementById('english-word').classList.remove('hidden');
             document.getElementById('instruction').classList.remove('hidden');
-            
-            document.getElementById('pos-badge').innerText = word.p;
-            document.getElementById('jp-pos').innerText = POS_JA[word.p] || "【その他】"; // 日本語品詞表示
-            
-            const wordEl = document.getElementById('english-word');
-            wordEl.innerText = word.w;
-            if (word.w.length > 15) wordEl.classList.replace('text-5xl', 'text-4xl'); else wordEl.classList.replace('text-4xl', 'text-5xl');
-
+            document.getElementById('pos-badge').innerText = word.p.toUpperCase();
+            document.getElementById('jp-pos').innerText = POS_JA[word.p] || "";
+            document.getElementById('english-word').innerText = word.w;
             document.getElementById('japanese-meaning').innerText = word.m;
             document.getElementById('collocation').innerText = word.c || "";
-            document.getElementById('collocation').style.display = word.c ? "block" : "none";
             document.getElementById('progress-text').innerText = `${(currentIndex + 1).toString().padStart(2, '0')}/${sessionWords.length.toString().padStart(2, '0')}`;
-            
             const card = document.getElementById('main-card');
+            card.classList.add('card-animate');
             card.style.transform = 'translateY(0) rotate(0deg)';
-            card.className = `swipe-card w-full h-[480px] rounded-[48px] flex flex-col items-center justify-center shadow-2xl p-8 relative ${POS_COLORS[word.p] || 'bg-zinc-700'}`;
+            card.className = `swipe-card card-animate w-full h-[480px] rounded-[48px] flex flex-col items-center justify-center shadow-2xl p-8 relative ${POS_COLORS[word.p] || 'bg-zinc-700'}`;
             startTimer();
         }
 
         function startTimer() {
+            clearInterval(timerInterval);
             startTime = Date.now();
-            const bar = document.getElementById('timer-bar'), limit = parseInt(document.getElementById('timer-setting').value);
-            bar.style.width = '100%'; bar.classList.remove('timer-danger'); clearInterval(timerInterval);
+            const bar = document.getElementById('timer-bar');
+            const limit = parseInt(document.getElementById('timer-setting').value);
+            bar.style.width = '100%'; bar.classList.remove('timer-danger');
             timerInterval = setInterval(() => {
                 const elapsed = Date.now() - startTime;
                 bar.style.width = Math.max(0, 100 - (elapsed / limit * 100)) + "%";
@@ -1344,57 +1385,93 @@
 
         function onFlick(dir) {
             clearInterval(timerInterval);
-            const elapsed = Date.now() - startTime, limit = parseInt(document.getElementById('timer-setting').value);
+            const elapsed = Date.now() - startTime;
+            const limit = parseInt(document.getElementById('timer-setting').value);
             currentFlick = dir; isAnswerMode = true;
-            document.getElementById('english-word').classList.add('hidden'); document.getElementById('instruction').classList.add('hidden');
-            document.getElementById('answer-section').classList.remove('hidden'); document.getElementById('main-card').style.transform = 'translateY(0)';
+            const cardUI = document.getElementById('main-card');
+            cardUI.classList.add('card-animate');
+            cardUI.style.transform = 'translateY(0) rotate(0deg)';
+            document.getElementById('english-word').classList.add('hidden'); 
+            document.getElementById('instruction').classList.add('hidden');
+            document.getElementById('answer-section').classList.remove('hidden');
             if (dir === 'up') {
-                document.getElementById('up-controls').classList.remove('hidden'); document.getElementById('down-controls').classList.add('hidden');
+                document.getElementById('up-controls').classList.remove('hidden'); 
+                document.getElementById('down-controls').classList.add('hidden');
                 const tag = document.getElementById('speed-tag');
-                if (elapsed < limit) { tag.innerText = "PERFECT"; tag.className = "text-[10px] font-black uppercase tracking-[0.3em] text-white/50 mb-2"; }
-                else if (elapsed < 3000) { tag.innerText = "GOOD"; tag.className = "text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-2"; }
-                else { tag.innerText = "SLOW (RETRY)"; tag.className = "text-[10px] font-black uppercase tracking-[0.3em] text-red-200/50 mb-2"; }
+                if (elapsed < limit) { tag.innerText = "PERFECT"; tag.className = "text-[10px] font-bold uppercase tracking-[0.3em] text-white/50 mb-2"; }
+                else if (elapsed < 3000) { tag.innerText = "GOOD"; tag.className = "text-[10px] font-bold uppercase tracking-[0.3em] text-white/30 mb-2"; }
+                else { tag.innerText = "SLOW (RETRY)"; tag.className = "text-[10px] font-bold uppercase tracking-[0.3em] text-red-200/50 mb-2"; }
             } else {
-                document.getElementById('up-controls').classList.add('hidden'); document.getElementById('down-controls').classList.remove('hidden');
+                document.getElementById('up-controls').classList.add('hidden'); 
+                document.getElementById('down-controls').classList.remove('hidden');
             }
             lucide.createIcons();
         }
 
         function submitResponse(isCorrect) {
-            const elapsed = Date.now() - startTime, limit = parseInt(document.getElementById('timer-setting').value);
-            const wordRef = sessionWords[currentIndex], target = userDb.find(w => w.id === wordRef.id);
-            if (!isCorrect || currentFlick === 'down' || elapsed > 3000) { sessionResults.retry++; sessionResults.missed.push(wordRef); target.level = 0; target.interval = 1; target.missCount++; }
-            else { if (elapsed < limit) { sessionResults.perfect++; target.level = Math.min(5, target.level + 1); target.interval *= 2.5; } else { sessionResults.good++; target.interval *= 1.2; } }
+            const elapsed = Date.now() - startTime;
+            const limit = parseInt(document.getElementById('timer-setting').value);
+            const wordRef = sessionWords[currentIndex];
+            const target = userDb.find(w => w.id === wordRef.id);
+            if (!isCorrect || currentFlick === 'down' || elapsed > 3000) { 
+                sessionResults.retry++; sessionResults.missed.push(wordRef); 
+                target.level = 0; target.interval = 1; target.missCount++; 
+            } else { 
+                if (elapsed < limit) { sessionResults.perfect++; target.level = Math.min(5, target.level + 1); target.interval *= 2.5; }
+                else { sessionResults.good++; target.interval *= 1.2; } 
+            }
             target.nextDate = Date.now() + (target.interval * 24 * 60 * 60 * 1000);
             saveProgress(); currentIndex++; renderWord();
         }
 
         function finishSession() {
-            document.getElementById('learning-screen').classList.add('hidden'); document.getElementById('result-screen').classList.remove('hidden');
-            document.getElementById('res-perfect').innerText = sessionResults.perfect; document.getElementById('res-good').innerText = sessionResults.good; document.getElementById('res-retry').innerText = sessionResults.retry;
+            clearInterval(timerInterval);
+            document.getElementById('learning-screen').classList.add('hidden'); 
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('res-perfect').innerText = sessionResults.perfect; 
+            document.getElementById('res-good').innerText = sessionResults.good; 
+            document.getElementById('res-retry').innerText = sessionResults.retry;
             const listBox = document.getElementById('missed-list'); listBox.innerHTML = "";
-            if (sessionResults.missed.length === 0) listBox.innerHTML = "<p class='text-center py-10 text-zinc-700 text-[10px] font-black italic uppercase tracking-widest'>No mistakes.</p>";
-            else sessionResults.missed.forEach(w => {
-                const row = document.createElement('div'); row.className = "bg-zinc-900 border border-zinc-800 p-5 rounded-[24px] flex justify-between items-center";
-                row.innerHTML = `<div><div class="font-black text-sm tracking-tight">${w.w}</div><div class="text-[10px] text-zinc-500 font-bold">${w.m}</div></div><div class="text-[8px] px-2.5 py-1 rounded bg-black/40 text-zinc-500 font-black uppercase">${w.p}</div>`;
-                listBox.appendChild(row);
-            });
+            if (sessionResults.missed.length === 0) {
+                listBox.innerHTML = "<p class='text-center py-10 text-zinc-700 text-[10px] font-bold italic uppercase tracking-widest'>No mistakes.</p>";
+            } else {
+                sessionResults.missed.forEach(w => {
+                    const row = document.createElement('div'); 
+                    row.className = "bg-zinc-900 border border-zinc-800 p-5 rounded-[24px] flex justify-between items-center";
+                    row.innerHTML = `<div><div class="font-bold text-sm tracking-tight">${w.w}</div><div class="text-[10px] text-zinc-500 font-bold">${w.m}</div></div><div class="text-[8px] px-2.5 py-1 rounded bg-black/40 text-zinc-500 font-bold uppercase">${w.p}</div>`;
+                    listBox.appendChild(row);
+                });
+            }
             lucide.createIcons();
         }
 
-        function goToHome() { document.getElementById('result-screen').classList.add('hidden'); document.getElementById('home-screen').classList.remove('hidden'); refreshHomeUI(); }
-        function quitApp() { if (confirm("QUIT SESSION?")) goToHome(); }
+        function goToHome() { 
+            clearInterval(timerInterval);
+            document.getElementById('result-screen').classList.add('hidden'); 
+            document.getElementById('learning-screen').classList.add('hidden'); 
+            document.getElementById('home-screen').classList.remove('hidden'); 
+            document.getElementById('confirm-modal').classList.add('hidden');
+            refreshHomeUI(); 
+        }
 
-        let touchOrigin = 0, activeDrag = false; const cardUI = document.getElementById('main-card');
-        const dragStart = (y) => { if (!isAnswerMode) { touchOrigin = y; activeDrag = true; } };
-        const dragMove = (y) => { if (activeDrag && !isAnswerMode) cardUI.style.transform = `translateY(${y - touchOrigin}px) rotate(${(y - touchOrigin) * 0.04}deg)`; };
-        const dragEnd = (y) => {
-            if (!activeDrag || isAnswerMode) return;
-            activeDrag = false; const delta = y - touchOrigin;
-            if (Math.abs(delta) > 100) onFlick(delta < 0 ? 'up' : 'down'); else cardUI.style.transform = 'translateY(0) rotate(0deg)';
-        };
-        cardUI.addEventListener('touchstart', e => dragStart(e.touches[0].clientY)); window.addEventListener('touchmove', e => dragMove(e.touches[0].clientY)); window.addEventListener('touchend', e => dragEnd(e.changedTouches[0].clientY));
-        cardUI.addEventListener('mousedown', e => dragStart(e.clientY)); window.addEventListener('mousemove', e => dragMove(e.clientY)); window.addEventListener('mouseup', e => dragEnd(e.clientY));
+        function initDrag() {
+            let touchOrigin = 0, activeDrag = false; 
+            const cardUI = document.getElementById('main-card');
+            const dragStart = (y) => { if (!isAnswerMode) { touchOrigin = y; activeDrag = true; cardUI.classList.remove('card-animate'); } };
+            const dragMove = (y) => { if (activeDrag && !isAnswerMode) cardUI.style.transform = `translateY(${y - touchOrigin}px) rotate(${(y - touchOrigin) * 0.04}deg)`; };
+            const dragEnd = (y) => {
+                if (!activeDrag || isAnswerMode) return;
+                activeDrag = false; cardUI.classList.add('card-animate'); 
+                if (Math.abs(y - touchOrigin) > 100) onFlick(y - touchOrigin < 0 ? 'up' : 'down'); 
+                else cardUI.style.transform = 'translateY(0) rotate(0deg)';
+            };
+            cardUI.addEventListener('touchstart', e => { dragStart(e.touches[0].clientY); }, { passive: true });
+            window.addEventListener('touchmove', e => { if (activeDrag) { e.preventDefault(); dragMove(e.touches[0].clientY); } }, { passive: false });
+            window.addEventListener('touchend', e => { dragEnd(e.changedTouches[0].clientY); });
+            cardUI.addEventListener('mousedown', e => dragStart(e.clientY));
+            window.addEventListener('mousemove', e => dragMove(e.clientY));
+            window.addEventListener('mouseup', e => dragEnd(e.clientY));
+        }
     </script>
 </body>
 </html>
